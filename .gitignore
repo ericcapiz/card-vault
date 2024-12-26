@@ -32,3 +32,7 @@ npm-debug.log*
 /config/google-credentials.json
 /config/*.json
 !config/db.js
+
+# Tesseract training data
+*.traineddata
+backend/eng.traineddata
