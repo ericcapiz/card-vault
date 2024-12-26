@@ -26,3 +26,9 @@ npm-debug.log*
 ._*
 .Spotlight-V100
 .Trashes
+
+# Google Cloud credentials
+/config/*-credentials.json
+/config/google-credentials.json
+/config/*.json
+!config/db.js
