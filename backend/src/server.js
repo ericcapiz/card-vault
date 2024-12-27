@@ -3,6 +3,7 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const connectDB = require("./config/db");
 const uploadRoutes = require("./routes/upload");
+const collectionRoutes = require("../routes/collectionRoutes");
 
 dotenv.config();
 
@@ -15,11 +16,15 @@ app.use(express.json());
 
 // Routes
 app.use("/api/upload", uploadRoutes);
+app.use("/api/collections", collectionRoutes);
 
 // Test route
 app.get("/api/test", (req, res) => {
   res.json({ message: "Backend is running!" });
 });
+
+// Connect to MongoDB
+connectDB();
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
