@@ -4,6 +4,7 @@ const dotenv = require("dotenv");
 const connectDB = require("./config/db");
 const uploadRoutes = require("./routes/upload");
 const collectionRoutes = require("../routes/collectionRoutes");
+const authRoutes = require("../routes/authRoutes");
 
 dotenv.config();
 
@@ -17,6 +18,7 @@ app.use(express.json());
 // Routes
 app.use("/api/upload", uploadRoutes);
 app.use("/api/collections", collectionRoutes);
+app.use("/api/auth", authRoutes);
 
 // Test route
 app.get("/api/test", (req, res) => {
