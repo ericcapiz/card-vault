@@ -28,10 +28,10 @@ npm-debug.log*
 .Trashes
 
 # Google Cloud credentials
-/config/*-credentials.json
-/config/google-credentials.json
-/config/*.json
-!config/db.js
+backend/src/config/google-credentials.json
+backend/src/config/*-credentials.json
+backend/src/config/*.json
+!backend/src/config/db.js
 
 # Tesseract training data
 *.traineddata
