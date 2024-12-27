@@ -3,6 +3,7 @@ const router = express.Router();
 const Collection = require("../models/collection/Collection");
 const auth = require("../middleware/auth");
 const jwt = require("jsonwebtoken");
+const XLSX = require("xlsx");
 
 // Public Routes (No auth needed)
 // Create initial collection
@@ -144,6 +145,101 @@ router.patch("/:collectionId/add-card", auth, async (req, res) => {
       message: "Card added successfully",
       collection,
     });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Download collection as Excel spreadsheet
+router.get("/:id/download", async (req, res) => {
+  try {
+    const collection = await Collection.findById(req.params.id);
+
+    if (!collection) {
+      return res.status(404).json({ message: "Collection not found" });
+    }
+
+    // Create safe filename
+    const safeFileName = collection.title.replace(/[^a-z0-9]/gi, "_");
+    const fileName = encodeURIComponent(`${safeFileName}.xlsx`);
+
+    // Prepare data
+    const worksheetData = collection.cards.map((card, index) => ({
+      "No.": index + 1,
+      "Card Name": card.name,
+      "Card Type": card.type,
+    }));
+
+    // Create workbook and worksheet
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(worksheetData, {
+      header: ["No.", "Card Name", "Card Type"],
+    });
+
+    // Set column widths
+    const colWidths = [
+      { wch: 5 }, // No. column
+      { wch: 30 }, // Card Name column
+      { wch: 15 }, // Card Type column
+    ];
+    worksheet["!cols"] = colWidths;
+
+    // Add header style
+    worksheet["!rows"] = [{ hpt: 25 }]; // Height of first row
+
+    // Add borders and styling to all cells
+    const range = XLSX.utils.decode_range(worksheet["!ref"]);
+    for (let R = range.s.r; R <= range.e.r; ++R) {
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const cell_address = { c: C, r: R };
+        const cell_ref = XLSX.utils.encode_cell(cell_address);
+        if (!worksheet[cell_ref]) continue;
+
+        worksheet[cell_ref].s = {
+          border: {
+            top: { style: "thin" },
+            bottom: { style: "thin" },
+            left: { style: "thin" },
+            right: { style: "thin" },
+          },
+          alignment: {
+            vertical: "center",
+            horizontal: "left",
+          },
+        };
+
+        // Header row styling
+        if (R === 0) {
+          worksheet[cell_ref].s.fill = {
+            fgColor: { rgb: "CCCCCC" },
+            patternType: "solid",
+          };
+          worksheet[cell_ref].s.font = {
+            bold: true,
+          };
+        }
+      }
+    }
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Cards");
+
+    // Write to buffer
+    const buffer = XLSX.write(workbook, {
+      type: "buffer",
+      bookType: "xlsx",
+      bookSST: false,
+    });
+
+    // Set headers
+    res.writeHead(200, {
+      "Content-Type":
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": `attachment; filename=${fileName}`,
+      "Content-Length": buffer.length,
+    });
+
+    // Send file
+    res.end(buffer);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
