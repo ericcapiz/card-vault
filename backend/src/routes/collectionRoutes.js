@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const Collection = require("../models/collection/Collection");
-const auth = require("../middleware/auth");
+const Collection = require("../../models/collection/Collection");
+const auth = require("../../middleware/auth");
 const jwt = require("jsonwebtoken");
 const XLSX = require("xlsx");
 
