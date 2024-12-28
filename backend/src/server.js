@@ -25,9 +25,14 @@ app.get("/api/test", (req, res) => {
   res.json({ message: "Backend is running!" });
 });
 
+// Add this near your other routes
+app.get("/", (req, res) => {
+  res.json({ message: "Card Vault API is running" });
+});
+
 // Connect to MongoDB
 connectDB();
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+app.listen(process.env.PORT || 5000, "0.0.0.0", () => {
+  console.log(`Server is running on port ${process.env.PORT || 5000}`);
 });
