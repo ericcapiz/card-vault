@@ -79,7 +79,6 @@ A Yu-Gi-Oh! card collection management system that uses OCR technology to scan a
 - 🎨 Modern, responsive Material-UI design
 - 🎮 Yu-Gi-Oh! themed animations and effects
 - 📱 Mobile-first approach
-- 🌙 Dark mode optimized
 
 ## Contributing
 
