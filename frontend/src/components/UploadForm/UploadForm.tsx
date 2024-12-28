@@ -5,6 +5,15 @@ import { useState } from "react";
 
 export const UploadForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+
+  const handleUploadBatch = () => {
+    console.log("Upload batch clicked");
+  };
+
+  const handleProcessCollection = () => {
+    console.log("Process collection clicked");
+  };
 
   return (
     <Paper
@@ -86,19 +95,24 @@ export const UploadForm = () => {
           </Typography>
         </Box>
 
-        <Button
-          variant="contained"
-          size="large"
-          sx={{
-            mt: 2,
-            bgcolor: "#29304D",
-            "&:hover": {
-              bgcolor: "#373E66",
-            },
-          }}
-        >
-          Process Collection
-        </Button>
+        <Box sx={{ display: "flex", gap: 2, justifyContent: "center", mt: 2 }}>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleUploadBatch}
+            disabled={files.length === 0}
+          >
+            Upload Batch
+          </Button>
+          <Button
+            variant="contained"
+            color="secondary"
+            onClick={handleProcessCollection}
+            disabled={files.length === 0}
+          >
+            Process Collection
+          </Button>
+        </Box>
       </Box>
     </Paper>
   );
