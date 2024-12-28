@@ -9,7 +9,6 @@ const client = new vision.ImageAnnotatorClient({
 
 const cleanCardName = (cardName) => {
   if (!cardName) return "";
-
   return cardName
     .trim()
     .replace(/\s{2,}/g, " ") // Fix multiple spaces first
@@ -24,7 +23,6 @@ const verifyCardName = async (ocrResult) => {
     const url = `${baseUrl}?fname=${encodeURIComponent(searchTerm)}`;
 
     const response = await axios.get(url);
-
     if (response.data && response.data.data && response.data.data.length > 0) {
       const results = response.data.data;
       const ocrWords = ocrResult.toLowerCase().split(" ");
@@ -71,7 +69,6 @@ const verifyCardName = async (ocrResult) => {
         };
       }
     }
-
     return null;
   } catch (error) {
     console.error("Error verifying card:", error.message);
@@ -81,6 +78,8 @@ const verifyCardName = async (ocrResult) => {
 
 const processImage = async (file) => {
   try {
+    console.log("Starting image processing...");
+
     const imageContext = {
       imageContext: {
         textDetectionParams: {
@@ -93,12 +92,21 @@ const processImage = async (file) => {
       },
     };
 
+    console.log("Calling Google Vision API...");
     const [result] = await client.textDetection({
       image: { content: file.buffer },
       imageContext: imageContext,
     });
+    console.log(
+      "Vision API Response received:",
+      result ? "Success" : "No result"
+    );
 
     const detections = result.textAnnotations;
+    console.log(
+      "Text detections:",
+      detections ? detections[0]?.description : "No detections"
+    );
 
     if (!detections || detections.length === 0) {
       return {
@@ -112,12 +120,17 @@ const processImage = async (file) => {
       .split("\n")
       .map((line) => line.trim())
       .filter((line) => line.length > 0);
+    console.log("Detected lines:", lines);
 
     const cardName = findCardName(lines);
+    console.log("Found card name:", cardName);
+
     const cleanedName = cleanCardName(cardName);
+    console.log("Cleaned card name:", cleanedName);
 
     // Verify with YGO API
     const verifiedCard = await verifyCardName(cleanedName);
+    console.log("Verified card:", verifiedCard);
 
     return {
       filename: file.originalname,
@@ -126,6 +139,7 @@ const processImage = async (file) => {
       success: verifiedCard !== null,
     };
   } catch (error) {
+    console.error("Error in processImage:", error);
     return {
       filename: file.originalname,
       error: error.message,
@@ -181,4 +195,6 @@ const findCardName = (lines) => {
   return null;
 };
 
-module.exports = { uploadImages };
+module.exports = {
+  uploadImages,
+};
