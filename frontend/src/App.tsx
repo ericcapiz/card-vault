@@ -1,5 +1,7 @@
-import { Box, Typography } from "@mui/material";
+import { Box } from "@mui/material";
 import { Navbar } from "@/components/Navbar/Navbar";
+import { UploadForm } from "@/components/UploadForm/UploadForm";
+import { Footer } from "@/components/Footer/Footer";
 
 function App() {
   return (
@@ -13,9 +15,21 @@ function App() {
       }}
     >
       <Navbar />
-      <Box component="main" sx={{ mt: 8, p: 3 }}>
-        <Typography variant="h4">Welcome to Card Vault</Typography>
+      <Box
+        component="main"
+        sx={{
+          mt: 8,
+          p: 3,
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <UploadForm />
       </Box>
+      <Footer />
     </Box>
   );
 }
