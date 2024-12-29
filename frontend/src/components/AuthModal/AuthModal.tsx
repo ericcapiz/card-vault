@@ -1,20 +1,18 @@
 import { useState } from "react";
-import { Modal, Box, Typography, TextField, Button, Link } from "@mui/material";
-
-const modalStyle = {
-  position: "absolute",
-  top: "50%",
-  left: "50%",
-  transform: "translate(-50%, -50%)",
-  width: {
-    xs: "90%",
-    sm: 400,
-  },
-  bgcolor: "background.paper",
-  borderRadius: 1,
-  boxShadow: 24,
-  p: 4,
-};
+import { useDispatch, useSelector } from "react-redux";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  TextField,
+  Button,
+  Box,
+  Typography,
+  CircularProgress,
+} from "@mui/material";
+import { login, register, toggleAuthMode } from "@/store/slices/authSlice";
+import { RootState } from "@/store/store";
+import type { AppDispatch } from "@/store/store";
 
 interface AuthModalProps {
   open: boolean;
@@ -22,119 +20,173 @@ interface AuthModalProps {
 }
 
 export const AuthModal = ({ open, onClose }: AuthModalProps) => {
-  const [isLogin, setIsLogin] = useState(true);
+  const dispatch = useDispatch<AppDispatch>();
+  const { isLoading, error, isLoginMode } = useSelector(
+    (state: RootState) => state.auth
+  );
+
+  const [formData, setFormData] = useState({
+    username: "",
+    email: "",
+    password: "",
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (isLoginMode) {
+      await dispatch(
+        login({
+          username: formData.username,
+          password: formData.password,
+        })
+      );
+    } else {
+      await dispatch(register(formData));
+    }
+
+    if (!error) {
+      onClose();
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const textFieldSx = {
+    "& .MuiOutlinedInput-root": {
+      backgroundColor: "rgba(0, 0, 0, 0.2)", // Dark background for input
+      "& fieldset": {
+        borderColor: "rgba(255, 255, 255, 0.23)",
+      },
+      "&:hover fieldset": {
+        borderColor: "rgba(255, 255, 255, 0.4)",
+      },
+      "&.Mui-focused fieldset": {
+        borderColor: "#9BA5D9",
+      },
+      input: {
+        color: "#fff",
+      },
+    },
+    "& .MuiInputLabel-root": {
+      color: "rgba(255, 255, 255, 0.7)",
+      "&.Mui-focused": {
+        color: "#9BA5D9",
+      },
+    },
+  };
 
   return (
-    <Modal open={open} onClose={onClose} aria-labelledby="auth-modal-title">
-      <Box sx={modalStyle}>
-        <Typography
-          id="auth-modal-title"
-          variant="h5"
-          component="h2"
-          align="center"
-          mb={3}
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="xs"
+      fullWidth
+      PaperProps={{
+        sx: {
+          bgcolor: "background.paper",
+        },
+      }}
+    >
+      <DialogTitle align="center">
+        {isLoginMode ? "Login" : "Create Account"}
+      </DialogTitle>
+      <DialogContent>
+        <Box
+          component="form"
+          onSubmit={handleSubmit}
+          autoComplete="off"
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+            pt: 2,
+          }}
         >
-          {isLogin ? "Login" : "Register"}
-        </Typography>
-
-        <Box component="form" sx={{ mt: 1 }}>
           <TextField
-            margin="normal"
             required
             fullWidth
-            id="username"
             label="Username"
             name="username"
-            autoComplete="username"
-            autoFocus
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                "&.Mui-focused fieldset": {
-                  borderColor: "#9BA5D9",
-                },
-              },
-              "& label.Mui-focused": {
-                color: "#9BA5D9",
-              },
-            }}
+            value={formData.username}
+            onChange={handleChange}
+            autoComplete="off"
+            sx={textFieldSx}
           />
 
-          {!isLogin && (
+          {!isLoginMode && (
             <TextField
-              margin="normal"
               required
               fullWidth
-              id="email"
-              label="Email Address"
+              label="Email"
               name="email"
-              autoComplete="email"
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  "&.Mui-focused fieldset": {
-                    borderColor: "#9BA5D9",
-                  },
-                },
-                "& label.Mui-focused": {
-                  color: "#9BA5D9",
-                },
-              }}
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              autoComplete="off"
+              sx={textFieldSx}
             />
           )}
 
           <TextField
-            margin="normal"
             required
             fullWidth
-            name="password"
             label="Password"
+            name="password"
             type="password"
-            id="password"
-            autoComplete={isLogin ? "current-password" : "new-password"}
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                "&.Mui-focused fieldset": {
-                  borderColor: "#9BA5D9",
-                },
-              },
-              "& label.Mui-focused": {
-                color: "#9BA5D9",
-              },
-            }}
+            value={formData.password}
+            onChange={handleChange}
+            autoComplete="new-password"
+            sx={textFieldSx}
           />
+
+          {error && (
+            <Typography color="error" variant="body2" align="center">
+              {error}
+            </Typography>
+          )}
 
           <Button
             type="submit"
-            fullWidth
             variant="contained"
-            sx={{ mt: 3, mb: 2 }}
+            fullWidth
+            disabled={isLoading}
+            sx={{ mt: 2 }}
           >
-            {isLogin ? "Login" : "Register"}
+            {isLoading ? (
+              <CircularProgress size={24} />
+            ) : isLoginMode ? (
+              "Login"
+            ) : (
+              "Register"
+            )}
           </Button>
 
-          <Box textAlign="center">
-            <Link
-              component="button"
-              variant="body2"
-              onClick={() => setIsLogin(!isLogin)}
-              sx={{
-                cursor: "pointer",
-                color: "#9BA5D9",
-                "&:hover": {
-                  color: "#B8C0E9",
-                  textDecoration: "underline",
-                },
-                opacity: 1,
-                fontSize: "0.9rem",
-                letterSpacing: "0.5px",
-              }}
-            >
-              {isLogin
-                ? "Don't have an account? Sign Up"
-                : "Already have an account? Login"}
-            </Link>
-          </Box>
+          <Button
+            variant="text"
+            onClick={() => dispatch(toggleAuthMode())}
+            sx={{
+              mt: 1,
+              color: "#9BA5D9",
+              "&:hover": {
+                color: "#B8C0E9",
+                background: "rgba(155, 165, 217, 0.08)",
+              },
+              textTransform: "none",
+              fontSize: "0.9rem",
+            }}
+          >
+            {isLoginMode
+              ? "Don't have an account? Register"
+              : "Already have an account? Login"}
+          </Button>
         </Box>
-      </Box>
-    </Modal>
+      </DialogContent>
+    </Dialog>
   );
 };
