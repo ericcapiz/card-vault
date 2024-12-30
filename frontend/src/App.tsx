@@ -1,63 +1,35 @@
-import { Box } from "@mui/material";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { Navbar } from "@/components/Navbar/Navbar";
-import { UploadForm } from "@/components/UploadForm/UploadForm";
-import { Footer } from "@/components/Footer/Footer";
-import Profile from "@/pages/Profile";
-import ProtectedRoute from "@/components/ProtectedRoutes/ProtectedRoute";
-import { useEffect } from "react";
-import { useDispatch } from "react-redux";
-import { checkAuth } from "@/store/slices/authSlice";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { RootState } from "./store/store";
+import ProtectedRoute from "./components/ProtectedRoutes/ProtectedRoute";
+import { UploadForm } from "./components/UploadForm/UploadForm";
+import { Navbar } from "./components/Navbar/Navbar";
+import Home from "./pages/Home";
 
 function App() {
-  const dispatch = useDispatch();
-
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      dispatch(checkAuth(token));
-    }
-  }, [dispatch]);
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
 
   return (
-    <BrowserRouter>
-      <Box
-        sx={{
-          minHeight: "100vh",
-          width: "100%",
-          bgcolor: "background.default",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <Navbar />
-        <Box
-          component="main"
-          sx={{
-            mt: 8,
-            p: 3,
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <Routes>
-            <Route path="/" element={<UploadForm />} />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
-        </Box>
-        <Footer />
-      </Box>
-    </BrowserRouter>
+    <>
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route
+          path="/upload"
+          element={
+            <ProtectedRoute>
+              <UploadForm />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="*"
+          element={
+            isAuthenticated ? <Navigate to="/upload" /> : <Navigate to="/" />
+          }
+        />
+      </Routes>
+    </>
   );
 }
 

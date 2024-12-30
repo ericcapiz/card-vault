@@ -26,6 +26,11 @@ export const processImageBatch = createAsyncThunk(
   "upload/processImageBatch",
   async (files: File[], { getState, rejectWithValue }) => {
     try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("Authentication required");
+      }
+
       const formData = new FormData();
       files.forEach((file) => {
         formData.append("images", file);
@@ -37,6 +42,9 @@ export const processImageBatch = createAsyncThunk(
 
       const response = await fetch("https://card-vault.fly.dev/api/batches", {
         method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         body: formData,
       });
 
@@ -59,10 +67,18 @@ export const deleteCardFromBatch = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("Authentication required");
+      }
+
       const response = await fetch(
         `https://card-vault.fly.dev/api/batches/${batchGroupId}/cards/${cardIndex}`,
         {
           method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
 

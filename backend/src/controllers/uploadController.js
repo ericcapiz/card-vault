@@ -2,9 +2,13 @@ const { processImage } = require("../utils/ocrUtils");
 
 const uploadImages = async (req, res) => {
   try {
+    // User ID is available from auth middleware
+    const userId = req.userId;
+
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ message: "No image files uploaded" });
     }
+
     const results = await Promise.all(req.files.map(processImage));
 
     // Extract just the name and type from verified cards
@@ -18,6 +22,7 @@ const uploadImages = async (req, res) => {
     res.json({
       message: "Images processed successfully",
       processedCards,
+      userId, // Include userId in response
     });
   } catch (error) {
     console.error("Error processing images:", error);

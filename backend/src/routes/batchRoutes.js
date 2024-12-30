@@ -2,16 +2,16 @@ const express = require("express");
 const router = express.Router();
 const Batch = require("../../models/batch/Batch");
 const auth = require("../../middleware/auth");
-const jwt = require("jsonwebtoken");
 const multer = require("multer");
 const { processImage } = require("../utils/ocrUtils");
 const upload = multer({ storage: multer.memoryStorage() });
 
 // Create batch (process images and store)
-router.post("/", upload.array("images", 10), async (req, res) => {
+router.post("/", auth, upload.array("images", 10), async (req, res) => {
   try {
     const { batchGroupId } = req.body;
     const files = req.files;
+    const userId = req.userId; // From auth middleware
 
     if (!files || files.length === 0) {
       return res.status(400).json({ message: "No images provided" });
@@ -19,18 +19,6 @@ router.post("/", upload.array("images", 10), async (req, res) => {
 
     if (!batchGroupId) {
       return res.status(400).json({ message: "No batch group ID provided" });
-    }
-
-    // Get userId if token exists
-    let userId = null;
-    const token = req.header("Authorization")?.replace("Bearer ", "");
-    if (token) {
-      try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        userId = decoded.userId;
-      } catch (error) {
-        // Continue with null userId if token is invalid
-      }
     }
 
     // Process all images in parallel using shared OCR utility
@@ -68,10 +56,11 @@ router.post("/", upload.array("images", 10), async (req, res) => {
 });
 
 // Get all batches for a group
-router.get("/group/:batchGroupId", async (req, res) => {
+router.get("/group/:batchGroupId", auth, async (req, res) => {
   try {
     const batches = await Batch.find({
       batchGroupId: req.params.batchGroupId,
+      userId: req.userId,
     }).sort({ createdAt: 1 });
 
     res.json(batches);
@@ -81,9 +70,12 @@ router.get("/group/:batchGroupId", async (req, res) => {
 });
 
 // Delete all batches for a group
-router.delete("/group/:batchGroupId", async (req, res) => {
+router.delete("/group/:batchGroupId", auth, async (req, res) => {
   try {
-    await Batch.deleteMany({ batchGroupId: req.params.batchGroupId });
+    await Batch.deleteMany({
+      batchGroupId: req.params.batchGroupId,
+      userId: req.userId,
+    });
     res.json({ message: "All batches in group deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -91,11 +83,14 @@ router.delete("/group/:batchGroupId", async (req, res) => {
 });
 
 // Delete card from batch
-router.delete("/:batchGroupId/cards/:cardIndex", async (req, res) => {
+router.delete("/:batchGroupId/cards/:cardIndex", auth, async (req, res) => {
   try {
     const { batchGroupId, cardIndex } = req.params;
 
-    const batch = await Batch.findOne({ batchGroupId });
+    const batch = await Batch.findOne({
+      batchGroupId,
+      userId: req.userId,
+    });
     if (!batch) {
       return res.status(404).json({ message: "Batch not found" });
     }

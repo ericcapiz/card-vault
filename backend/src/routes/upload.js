@@ -1,6 +1,7 @@
 const express = require("express");
 const multer = require("multer");
 const { uploadImages } = require("../controllers/uploadController");
+const auth = require("../../middleware/auth");
 
 const router = express.Router();
 const upload = multer({
@@ -12,6 +13,6 @@ const upload = multer({
 });
 
 // Keep using "image" to match your existing setup
-router.post("/image", upload.array("image", 10), uploadImages);
+router.post("/image", auth, upload.array("image", 10), uploadImages);
 
 module.exports = router;

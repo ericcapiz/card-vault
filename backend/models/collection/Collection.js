@@ -26,22 +26,13 @@ const collectionSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
-    default: null,
+    required: true,
   },
   createdAt: {
     type: Date,
     default: Date.now,
   },
 });
-
-// Add TTL index for anonymous collections
-collectionSchema.index(
-  { createdAt: 1 },
-  {
-    expireAfterSeconds: 24 * 60 * 60, // 24 hours
-    partialFilterExpression: { userId: null }, // Only for collections with no user
-  }
-);
 
 const Collection = mongoose.model("Collection", collectionSchema);
 

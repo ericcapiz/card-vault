@@ -1,30 +1,29 @@
 const express = require("express");
 const router = express.Router();
 const Collection = require("../../models/collection/Collection");
+const Batch = require("../../models/batch/Batch");
 const auth = require("../../middleware/auth");
-const jwt = require("jsonwebtoken");
 
-// Create collection - no auth required, but uses userId if available
-router.post("/", async (req, res) => {
+// Create collection - auth required
+router.post("/", auth, async (req, res) => {
   try {
     const { title, description, batchGroupId } = req.body;
-    const token = req.header("Authorization")?.replace("Bearer ", "");
+    const userId = req.userId;
 
-    let userId = null;
-    if (token) {
-      try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        userId = decoded.userId;
-      } catch (error) {
-        // Token invalid - that's fine, continue as anonymous
+    // Get the cards from the batch if batchGroupId is provided
+    let cards = [];
+    if (batchGroupId) {
+      const batch = await Batch.findOne({ batchGroupId, userId });
+      if (batch) {
+        cards = batch.cards;
       }
     }
 
     const collection = new Collection({
       title,
       description,
-      batchGroupId,
-      userId: userId, // Will be null for anonymous users, set for logged-in users
+      cards,
+      userId,
     });
 
     const savedCollection = await collection.save();
@@ -44,14 +43,19 @@ router.get("/", auth, async (req, res) => {
   }
 });
 
-// Download collection - no auth required
-router.get("/:id/download", async (req, res) => {
+// Download collection - auth required
+router.get("/:id/download", auth, async (req, res) => {
   try {
-    const collection = await Collection.findById(req.params.id);
+    const collection = await Collection.findOne({
+      _id: req.params.id,
+      userId: req.userId,
+    });
+
     if (!collection) {
       return res.status(404).json({ message: "Collection not found" });
     }
-    // ... rest of download logic ...
+
+    res.json(collection);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -61,7 +65,10 @@ router.get("/:id/download", async (req, res) => {
 router.put("/:id", auth, async (req, res) => {
   try {
     const { title, description } = req.body;
-    const collection = await Collection.findById(req.params.id);
+    const collection = await Collection.findOne({
+      _id: req.params.id,
+      userId: req.userId,
+    });
 
     if (!collection) {
       return res.status(404).json({ message: "Collection not found" });
@@ -80,10 +87,15 @@ router.put("/:id", auth, async (req, res) => {
 // Delete collection - auth required
 router.delete("/:id", auth, async (req, res) => {
   try {
-    const collection = await Collection.findByIdAndDelete(req.params.id);
+    const collection = await Collection.findOneAndDelete({
+      _id: req.params.id,
+      userId: req.userId,
+    });
+
     if (!collection) {
       return res.status(404).json({ message: "Collection not found" });
     }
+
     res.json({ message: "Collection deleted" });
   } catch (error) {
     res.status(500).json({ message: error.message });

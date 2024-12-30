@@ -109,192 +109,204 @@ export const UploadForm = ({
   };
 
   return (
-    <Paper
-      elevation={0}
+    <Box
       sx={{
-        p: 3,
-        bgcolor: "background.paper",
-        borderRadius: 1,
-        maxWidth: 800,
-        mx: "auto",
-        position: "relative",
+        minHeight: "calc(100vh - 64px)", // Full height minus navbar height
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        p: 2,
       }}
     >
-      <LoadingOverlay show={isProcessing} />
-      <Typography variant="h5" gutterBottom align="center" sx={{ mb: 4 }}>
-        Create New Collection
-      </Typography>
-
-      <Box
-        component="form"
-        sx={{ display: "flex", flexDirection: "column", gap: 3 }}
+      <Paper
+        elevation={0}
+        sx={{
+          p: 3,
+          bgcolor: "background.paper",
+          borderRadius: 1,
+          maxWidth: 800,
+          width: "100%",
+          position: "relative",
+        }}
       >
-        {!isAddingToCollection && (
-          <>
-            <TextField
-              required
-              fullWidth
-              label="Title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter collection title"
-              variant="outlined"
-              autoComplete="off"
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  "&.Mui-focused fieldset": {
-                    borderColor: "#9BA5D9",
-                  },
-                },
-                "& label.Mui-focused": {
-                  color: "#9BA5D9",
-                },
-              }}
-            />
+        <LoadingOverlay show={isProcessing} />
+        <Typography variant="h5" gutterBottom align="center" sx={{ mb: 4 }}>
+          Create New Collection
+        </Typography>
 
-            <TextField
-              fullWidth
-              label="Description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Enter collection description"
-              multiline
-              rows={3}
-              variant="outlined"
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  "&.Mui-focused fieldset": {
-                    borderColor: "#9BA5D9",
-                  },
-                },
-                "& label.Mui-focused": {
-                  color: "#9BA5D9",
-                },
-              }}
-            />
-          </>
-        )}
-
-        <Box sx={{ mt: 2 }}>
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={handleFileChange}
-            style={{ marginBottom: 2 }}
-          />
-          {files.length > 0 && (
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              Selected files: {files.length}
-            </Typography>
-          )}
-          {currentBatchError && (
-            <Typography
-              color="error"
-              variant="caption"
-              sx={{ display: "block", mt: 1 }}
-            >
-              {currentBatchError}
-            </Typography>
-          )}
-        </Box>
-
-        <Box sx={{ display: "flex", gap: 2, justifyContent: "space-between" }}>
-          <Button
-            variant="contained"
-            onClick={handleUploadBatch}
-            disabled={isProcessing || files.length === 0}
-            sx={{ flex: 1 }}
-          >
-            Upload Batch ({files.length} files)
-          </Button>
-
-          <Button
-            variant="contained"
-            onClick={handleCreateOrUpdate}
-            disabled={!batchGroupId || batches.length === 0 || !title}
-            sx={{ flex: 1 }}
-          >
-            {isAddingToCollection
-              ? "Add Cards"
-              : `Create Collection (${batches.length} cards)`}
-          </Button>
-        </Box>
-
-        {/* Processed Cards List */}
-        {batches.length > 0 && (
-          <Box sx={{ mt: 4 }}>
-            <Typography variant="h6" gutterBottom>
-              Processed Cards
-            </Typography>
-            <List>
-              {batches.map((card, index) => (
-                <ListItem
-                  key={index}
-                  sx={{
-                    bgcolor: "background.paper",
-                    mb: 1,
-                    borderRadius: 1,
-                    border: "1px solid rgba(255, 255, 255, 0.12)",
-                  }}
-                  secondaryAction={
-                    <IconButton
-                      edge="end"
-                      onClick={() => {
-                        if (batchGroupId) {
-                          dispatch(
-                            deleteCardFromBatch({
-                              batchGroupId,
-                              cardIndex: index,
-                            })
-                          );
-                        }
-                      }}
-                      sx={{ color: "error.main" }}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  }
-                >
-                  <Box>
-                    <Typography variant="body1">{card.name}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {card.type}
-                    </Typography>
-                  </Box>
-                </ListItem>
-              ))}
-            </List>
-          </Box>
-        )}
-
-        {successMessage && newCollectionId && (
-          <Box sx={{ mb: 3, textAlign: "center" }}>
-            <Typography color="success.main">
-              {successMessage}
-              <Link
-                component="button"
-                onClick={() =>
-                  window.open(
-                    `/api/collections/${newCollectionId}/download`,
-                    "_blank"
-                  )
-                }
+        <Box
+          component="form"
+          sx={{ display: "flex", flexDirection: "column", gap: 3 }}
+        >
+          {!isAddingToCollection && (
+            <>
+              <TextField
+                required
+                fullWidth
+                label="Title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Enter collection title"
+                variant="outlined"
+                autoComplete="off"
                 sx={{
-                  cursor: "pointer",
-                  textDecoration: "underline",
-                  color: "#9BA5D9",
-                  "&:hover": {
-                    color: "#B8C0E9",
+                  "& .MuiOutlinedInput-root": {
+                    "&.Mui-focused fieldset": {
+                      borderColor: "#9BA5D9",
+                    },
+                  },
+                  "& label.Mui-focused": {
+                    color: "#9BA5D9",
                   },
                 }}
+              />
+
+              <TextField
+                fullWidth
+                label="Description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Enter collection description"
+                multiline
+                rows={3}
+                variant="outlined"
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    "&.Mui-focused fieldset": {
+                      borderColor: "#9BA5D9",
+                    },
+                  },
+                  "& label.Mui-focused": {
+                    color: "#9BA5D9",
+                  },
+                }}
+              />
+            </>
+          )}
+
+          <Box sx={{ mt: 2 }}>
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={handleFileChange}
+              style={{ marginBottom: 2 }}
+            />
+            {files.length > 0 && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                Selected files: {files.length}
+              </Typography>
+            )}
+            {currentBatchError && (
+              <Typography
+                color="error"
+                variant="caption"
+                sx={{ display: "block", mt: 1 }}
               >
-                {title || "collection"} (click to download spreadsheet)
-              </Link>
-            </Typography>
+                {currentBatchError}
+              </Typography>
+            )}
           </Box>
-        )}
-      </Box>
-    </Paper>
+
+          <Box
+            sx={{ display: "flex", gap: 2, justifyContent: "space-between" }}
+          >
+            <Button
+              variant="contained"
+              onClick={handleUploadBatch}
+              disabled={isProcessing || files.length === 0}
+              sx={{ flex: 1 }}
+            >
+              Upload Batch ({files.length} files)
+            </Button>
+
+            <Button
+              variant="contained"
+              onClick={handleCreateOrUpdate}
+              disabled={!batchGroupId || batches.length === 0 || !title}
+              sx={{ flex: 1 }}
+            >
+              {isAddingToCollection
+                ? "Add Cards"
+                : `Create Collection (${batches.length} cards)`}
+            </Button>
+          </Box>
+
+          {/* Processed Cards List */}
+          {batches.length > 0 && (
+            <Box sx={{ mt: 4 }}>
+              <Typography variant="h6" gutterBottom>
+                Processed Cards
+              </Typography>
+              <List>
+                {batches.map((card, index) => (
+                  <ListItem
+                    key={index}
+                    sx={{
+                      bgcolor: "background.paper",
+                      mb: 1,
+                      borderRadius: 1,
+                      border: "1px solid rgba(255, 255, 255, 0.12)",
+                    }}
+                    secondaryAction={
+                      <IconButton
+                        edge="end"
+                        onClick={() => {
+                          if (batchGroupId) {
+                            dispatch(
+                              deleteCardFromBatch({
+                                batchGroupId,
+                                cardIndex: index,
+                              })
+                            );
+                          }
+                        }}
+                        sx={{ color: "error.main" }}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    }
+                  >
+                    <Box>
+                      <Typography variant="body1">{card.name}</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {card.type}
+                      </Typography>
+                    </Box>
+                  </ListItem>
+                ))}
+              </List>
+            </Box>
+          )}
+
+          {successMessage && newCollectionId && (
+            <Box sx={{ mb: 3, textAlign: "center" }}>
+              <Typography color="success.main">
+                {successMessage}
+                <Link
+                  component="button"
+                  onClick={() =>
+                    window.open(
+                      `/api/collections/${newCollectionId}/download`,
+                      "_blank"
+                    )
+                  }
+                  sx={{
+                    cursor: "pointer",
+                    textDecoration: "underline",
+                    color: "#9BA5D9",
+                    "&:hover": {
+                      color: "#B8C0E9",
+                    },
+                  }}
+                >
+                  {title || "collection"} (click to download spreadsheet)
+                </Link>
+              </Typography>
+            </Box>
+          )}
+        </Box>
+      </Paper>
+    </Box>
   );
 };
