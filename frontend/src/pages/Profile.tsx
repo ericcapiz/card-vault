@@ -23,6 +23,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import DownloadIcon from "@mui/icons-material/Download";
 import { UploadForm } from "@/components/UploadForm/UploadForm";
+import { LoadingOverlay } from "@/components/LoadingOverlay/LoadingOverlay";
 import {
   fetchCollections,
   deleteCollection,
@@ -55,6 +56,7 @@ const EditDialog = ({
   const [newTitle, setNewTitle] = useState(title);
   const [newDescription, setNewDescription] = useState(description);
   const [files, setFiles] = useState<File[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files) return;
@@ -65,83 +67,79 @@ const EditDialog = ({
     if (files.length === 0) return;
 
     try {
+      setIsProcessing(true);
       await dispatch(addCardsToCollection({ collectionId, files })).unwrap();
       setFiles([]);
       const fileInput = document.querySelector(
         'input[type="file"]'
       ) as HTMLInputElement;
       if (fileInput) fileInput.value = "";
-
-      // Show success message for adding cards
       setSuccessMessage("Cards added successfully");
       setTimeout(() => setSuccessMessage(""), 3000);
     } catch (error) {
       console.error("Failed to add cards:", error);
       setSuccessMessage("Failed to add cards");
       setTimeout(() => setSuccessMessage(""), 3000);
-    }
-  };
-
-  const handleSaveChanges = async () => {
-    try {
-      await onSave(newTitle, newDescription);
-      // Don't close the dialog here - let the parent handle it
-    } catch (error) {
-      console.error("Failed to save changes:", error);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>Edit Collection</DialogTitle>
-      <DialogContent>
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: "bold" }}>
-            Collection Details
-          </Typography>
-          <TextField
-            label="Title"
-            fullWidth
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
-            sx={{ mb: 2 }}
-          />
-          <TextField
-            label="Description"
-            fullWidth
-            multiline
-            rows={3}
-            value={newDescription}
-            onChange={(e) => setNewDescription(e.target.value)}
-          />
-        </Box>
+      <DialogContent sx={{ position: "relative" }}>
+        <LoadingOverlay show={isProcessing} />
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}>
+          {/* Collection Details Section */}
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: "bold" }}>
+              Collection Details
+            </Typography>
+            <TextField
+              label="Title"
+              fullWidth
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              label="Description"
+              fullWidth
+              multiline
+              rows={3}
+              value={newDescription}
+              onChange={(e) => setNewDescription(e.target.value)}
+            />
+          </Box>
 
-        <Box>
-          <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: "bold" }}>
-            Add New Cards
-          </Typography>
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={(e) => setFiles(Array.from(e.target.files || []))}
-          />
-          {files.length > 0 && (
-            <Button
-              variant="contained"
-              onClick={handleAddCards}
-              sx={{
-                mt: 2,
-                bgcolor: "#9BA5D9",
-                "&:hover": { bgcolor: "#B8C0E9" },
-              }}
-            >
-              Upload {files.length} Card{files.length > 1 ? "s" : ""}
-            </Button>
-          )}
+          {/* Add Cards Section */}
+          <Box>
+            <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: "bold" }}>
+              Add New Cards
+            </Typography>
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={handleFileChange}
+            />
+            {files.length > 0 && (
+              <Button
+                variant="contained"
+                onClick={handleAddCards}
+                sx={{
+                  mt: 2,
+                  bgcolor: "#9BA5D9",
+                  "&:hover": { bgcolor: "#B8C0E9" },
+                }}
+              >
+                Upload {files.length} Card{files.length > 1 ? "s" : ""}
+              </Button>
+            )}
+          </Box>
         </Box>
       </DialogContent>
-
       <DialogActions>
         <Button
           onClick={onClose}
@@ -184,7 +182,6 @@ const Profile = () => {
     title: string;
     description: string;
   } | null>(null);
-  const [addingCardsTo, setAddingCardsTo] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState("");
 
   useEffect(() => {
@@ -204,8 +201,6 @@ const Profile = () => {
   };
 
   const handleEditSave = async (title: string, description: string) => {
-    console.log("EditingCollection:", editingCollection);
-
     if (editingCollection) {
       try {
         const result = await dispatch(
@@ -215,8 +210,6 @@ const Profile = () => {
             description,
           })
         ).unwrap();
-
-        console.log("Update result:", result);
 
         setSuccessMessage("Collection updated successfully");
         setEditingCollection(null);
@@ -239,11 +232,15 @@ const Profile = () => {
     <Box
       sx={{
         display: "flex",
-        flexDirection: { xs: "column", md: "row" },
+        flexDirection: {
+          xs: "column",
+          md: collections.length ? "row" : "column",
+        },
         gap: { xs: 2, md: 4 },
         width: "100%",
         maxWidth: "1400px",
         margin: "0 auto",
+        justifyContent: collections.length ? "flex-start" : "center",
       }}
     >
       {/* Success Message */}
@@ -266,130 +263,134 @@ const Profile = () => {
       )}
 
       {/* Collections Section */}
-      <Box
-        sx={{
-          flex: { xs: "1", md: "2" },
-          width: "100%",
-          overflow: "auto",
-        }}
-      >
-        <Typography variant="h5" sx={{ mb: 3 }}>
-          Collections ({collections.length})
-        </Typography>
+      {collections.length > 0 && (
+        <Box
+          sx={{
+            flex: { xs: "1", md: "2" },
+            width: "100%",
+            overflow: "auto",
+          }}
+        >
+          <Typography variant="h5" sx={{ mb: 3 }}>
+            Collections ({collections.length})
+          </Typography>
 
-        {collections.map((collection) => (
-          <Paper key={collection._id} sx={{ mb: 4, overflow: "hidden" }}>
-            <Box
-              sx={{
-                p: 2,
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                borderBottom: 1,
-                borderColor: "divider",
-              }}
-            >
-              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                <Tooltip
-                  title={collection.description || "No description"}
-                  placement="top"
-                  arrow
-                >
-                  <Typography variant="h6">
-                    {collection.title} ({collection.cards.length})
-                  </Typography>
-                </Tooltip>
+          {collections.map((collection) => (
+            <Paper key={collection._id} sx={{ mb: 4, overflow: "hidden" }}>
+              <Box
+                sx={{
+                  p: 2,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  borderBottom: 1,
+                  borderColor: "divider",
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Tooltip
+                    title={collection.description || "No description"}
+                    placement="top"
+                    arrow
+                  >
+                    <Typography variant="h6">
+                      {collection.title} ({collection.cards.length})
+                    </Typography>
+                  </Tooltip>
+                </Box>
+                <Box>
+                  <IconButton
+                    size="small"
+                    onClick={() => handleDownload(collection._id)}
+                    sx={{
+                      color: "#9BA5D9",
+                      "&:hover": {
+                        backgroundColor: "rgba(155, 165, 217, 0.08)",
+                      },
+                    }}
+                  >
+                    <DownloadIcon />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    onClick={() =>
+                      setEditingCollection({
+                        _id: collection._id,
+                        title: collection.title,
+                        description: collection.description,
+                      })
+                    }
+                    sx={{
+                      color: "text.secondary",
+                      "&:hover": {
+                        backgroundColor: "rgba(255, 255, 255, 0.08)",
+                      },
+                    }}
+                  >
+                    <EditIcon />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    onClick={() => handleDeleteCollection(collection._id)}
+                    sx={{
+                      color: "error.main",
+                      "&:hover": {
+                        backgroundColor: "rgba(255, 99, 71, 0.08)",
+                      },
+                    }}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </Box>
               </Box>
-              <Box>
-                <IconButton
-                  size="small"
-                  onClick={() => handleDownload(collection._id)}
-                  sx={{
-                    color: "#9BA5D9",
-                    "&:hover": {
-                      backgroundColor: "rgba(155, 165, 217, 0.08)",
-                    },
-                  }}
-                >
-                  <DownloadIcon />
-                </IconButton>
-                <IconButton
-                  size="small"
-                  onClick={() =>
-                    setEditingCollection({
-                      _id: collection._id,
-                      title: collection.title,
-                      description: collection.description,
-                    })
-                  }
-                  sx={{
-                    color: "text.secondary",
-                    "&:hover": {
-                      backgroundColor: "rgba(255, 255, 255, 0.08)",
-                    },
-                  }}
-                >
-                  <EditIcon />
-                </IconButton>
-                <IconButton
-                  size="small"
-                  onClick={() => handleDeleteCollection(collection._id)}
-                  sx={{
-                    color: "error.main",
-                    "&:hover": {
-                      backgroundColor: "rgba(255, 99, 71, 0.08)",
-                    },
-                  }}
-                >
-                  <DeleteIcon />
-                </IconButton>
-              </Box>
-            </Box>
 
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Card Name</TableCell>
-                    <TableCell>Type</TableCell>
-                    <TableCell align="right">Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {collection.cards.map((card, index) => (
-                    <TableRow key={index}>
-                      <TableCell>{card.name}</TableCell>
-                      <TableCell>{card.type}</TableCell>
-                      <TableCell align="right">
-                        <IconButton
-                          size="small"
-                          onClick={() =>
-                            handleDeleteCard(collection._id, index)
-                          }
-                          sx={{
-                            color: "error.main",
-                            "&:hover": {
-                              backgroundColor: "rgba(255, 99, 71, 0.08)",
-                            },
-                          }}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </TableCell>
+              <TableContainer>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Card Name</TableCell>
+                      <TableCell>Type</TableCell>
+                      <TableCell align="right">Actions</TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Paper>
-        ))}
-      </Box>
+                  </TableHead>
+                  <TableBody>
+                    {collection.cards.map((card, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{card.name}</TableCell>
+                        <TableCell>{card.type}</TableCell>
+                        <TableCell align="right">
+                          <IconButton
+                            size="small"
+                            onClick={() =>
+                              handleDeleteCard(collection._id, index)
+                            }
+                            sx={{
+                              color: "error.main",
+                              "&:hover": {
+                                backgroundColor: "rgba(255, 99, 71, 0.08)",
+                              },
+                            }}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Paper>
+          ))}
+        </Box>
+      )}
 
       {/* Form Section */}
       <Box
         sx={{
-          flex: { xs: "1", md: "1" },
+          flex: { xs: "1", md: collections.length ? "1" : "auto" },
           width: "100%",
+          maxWidth: collections.length ? "none" : "800px",
+          margin: collections.length ? "0" : "0 auto",
         }}
       >
         <UploadForm />
