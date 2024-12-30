@@ -5,6 +5,7 @@ const connectDB = require("./config/db");
 const uploadRoutes = require("./routes/upload");
 const collectionRoutes = require("./routes/collectionRoutes");
 const authRoutes = require("./routes/authRoutes");
+const batchRoutes = require("./routes/batchRoutes");
 
 dotenv.config();
 
@@ -19,6 +20,7 @@ app.use(express.json());
 app.use("/api/upload", uploadRoutes);
 app.use("/api/collections", collectionRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/batches", batchRoutes);
 
 // Test route
 app.get("/api/test", (req, res) => {
