@@ -56,9 +56,25 @@ router.get("/:id/download", auth, async (req, res) => {
       return res.status(404).json({ message: "Collection not found" });
     }
 
+    // Format the data for Excel
+    const formattedCards = collection.cards.map((card) => ({
+      "Card Name": card.name,
+      "Card Type": card.type,
+    }));
+
     // Create workbook and worksheet
     const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(collection.cards);
+    const ws = XLSX.utils.json_to_sheet(formattedCards, {
+      header: ["Card Name", "Card Type"],
+      skipHeader: false,
+    });
+
+    // Set column widths
+    ws["!cols"] = [
+      { wch: 30 }, // Card Name column
+      { wch: 20 }, // Card Type column
+    ];
+
     XLSX.utils.book_append_sheet(wb, ws, "Cards");
 
     // Generate buffer
