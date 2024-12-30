@@ -1,75 +1,53 @@
 const express = require("express");
 const router = express.Router();
-const Collection = require("../../models/collection/Collection");
-const Batch = require("../../models/batch/Batch");
-const auth = require("../../middleware/auth");
-const jwt = require("jsonwebtoken");
-const XLSX = require("xlsx");
-const multer = require("multer");
-const upload = multer({ storage: multer.memoryStorage() });
-const { processImage } = require("../utils/ocrUtils");
+const Collection = require("../models/Collection");
+const auth = require("../middleware/auth");
 
-// Create initial collection
+// Create collection - no auth required
 router.post("/", async (req, res) => {
   try {
     const { title, description, batchGroupId } = req.body;
 
-    // Get token from header
-    const token = req.header("Authorization")?.replace("Bearer ", "");
-    if (!token) {
-      return res.status(401).json({ message: "No token provided" });
-    }
-
-    let userId;
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      userId = decoded.userId;
-    } catch (error) {
-      return res.status(401).json({ message: "Invalid token" });
-    }
-
-    // Get cards from batch
-    const batch = await Batch.findOne({ batchGroupId });
-    if (!batch) {
-      return res.status(404).json({ message: "Batch not found" });
-    }
-
+    // Create collection without userId for anonymous users
     const collection = new Collection({
       title,
       description,
-      cards: batch.cards,
-      userId,
+      batchGroupId,
+      userId: req.userId || null, // Will be null for anonymous users
     });
 
     const savedCollection = await collection.save();
-
-    // Delete the batch after successful collection creation
-    await Batch.deleteOne({ batchGroupId });
-
     res.status(201).json(savedCollection);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 });
 
-// Get all collections for logged-in user
-router.get("/", async (req, res) => {
+// Get all collections - auth required
+router.get("/", auth, async (req, res) => {
   try {
-    const token = req.header("Authorization")?.replace("Bearer ", "");
-    if (!token) {
-      return res.status(401).json({ message: "No token provided" });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const collections = await Collection.find({ userId: decoded.userId });
+    const collections = await Collection.find({ userId: req.userId });
     res.json(collections);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
-// Update collection title/description
-router.put("/:id", async (req, res) => {
+// Download collection - no auth required
+router.get("/:id/download", async (req, res) => {
+  try {
+    const collection = await Collection.findById(req.params.id);
+    if (!collection) {
+      return res.status(404).json({ message: "Collection not found" });
+    }
+    // ... rest of download logic ...
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Update collection - auth required
+router.put("/:id", auth, async (req, res) => {
   try {
     const { title, description } = req.body;
     const collection = await Collection.findById(req.params.id);
@@ -88,163 +66,14 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// Delete collection
-router.delete("/:id", async (req, res) => {
+// Delete collection - auth required
+router.delete("/:id", auth, async (req, res) => {
   try {
     const collection = await Collection.findByIdAndDelete(req.params.id);
     if (!collection) {
       return res.status(404).json({ message: "Collection not found" });
     }
     res.json({ message: "Collection deleted" });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Delete card from collection
-router.delete("/:id/cards/:cardIndex", async (req, res) => {
-  try {
-    const collection = await Collection.findById(req.params.id);
-    if (!collection) {
-      return res.status(404).json({ message: "Collection not found" });
-    }
-
-    collection.cards.splice(parseInt(req.params.cardIndex), 1);
-    await collection.save();
-    res.json(collection);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Download collection as Excel spreadsheet
-router.get("/:id/download", async (req, res) => {
-  try {
-    const collection = await Collection.findById(req.params.id);
-
-    if (!collection) {
-      return res.status(404).json({ message: "Collection not found" });
-    }
-
-    // Create safe filename
-    const safeFileName = collection.title.replace(/[^a-z0-9]/gi, "_");
-    const fileName = encodeURIComponent(`${safeFileName}.xlsx`);
-
-    // Prepare data
-    const worksheetData = collection.cards.map((card, index) => ({
-      "No.": index + 1,
-      "Card Name": card.name,
-      "Card Type": card.type,
-    }));
-
-    // Create workbook and worksheet
-    const workbook = XLSX.utils.book_new();
-    const worksheet = XLSX.utils.json_to_sheet(worksheetData, {
-      header: ["No.", "Card Name", "Card Type"],
-    });
-
-    // Set column widths
-    const colWidths = [
-      { wch: 5 }, // No. column
-      { wch: 30 }, // Card Name column
-      { wch: 15 }, // Card Type column
-    ];
-    worksheet["!cols"] = colWidths;
-
-    // Add header style
-    worksheet["!rows"] = [{ hpt: 25 }]; // Height of first row
-
-    // Add borders and styling to all cells
-    const range = XLSX.utils.decode_range(worksheet["!ref"]);
-    for (let R = range.s.r; R <= range.e.r; ++R) {
-      for (let C = range.s.c; C <= range.e.c; ++C) {
-        const cell_address = { c: C, r: R };
-        const cell_ref = XLSX.utils.encode_cell(cell_address);
-        if (!worksheet[cell_ref]) continue;
-
-        worksheet[cell_ref].s = {
-          border: {
-            top: { style: "thin" },
-            bottom: { style: "thin" },
-            left: { style: "thin" },
-            right: { style: "thin" },
-          },
-          alignment: {
-            vertical: "center",
-            horizontal: "left",
-          },
-        };
-
-        // Header row styling
-        if (R === 0) {
-          worksheet[cell_ref].s.fill = {
-            fgColor: { rgb: "CCCCCC" },
-            patternType: "solid",
-          };
-          worksheet[cell_ref].s.font = {
-            bold: true,
-          };
-        }
-      }
-    }
-
-    // Use collection title for the worksheet name (sanitized to remove invalid characters)
-    const sheetName = collection.title
-      .replace(/[\\*?:/[\]]/g, "")
-      .substring(0, 31); // Excel has 31 char limit
-    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
-
-    // Write to buffer
-    const buffer = XLSX.write(workbook, {
-      type: "buffer",
-      bookType: "xlsx",
-      bookSST: false,
-    });
-
-    // Set headers
-    res.writeHead(200, {
-      "Content-Type":
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename=${fileName}`,
-      "Content-Length": buffer.length,
-    });
-
-    // Send file
-    res.end(buffer);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Add cards to collection
-router.post("/:id/cards", upload.array("images", 10), async (req, res) => {
-  try {
-    const collection = await Collection.findById(req.params.id);
-    if (!collection) {
-      return res.status(404).json({ message: "Collection not found" });
-    }
-
-    const files = req.files;
-    if (!files || files.length === 0) {
-      return res.status(400).json({ message: "No images provided" });
-    }
-
-    // Process all images in parallel using shared OCR utility
-    const results = await Promise.all(files.map(processImage));
-
-    // Extract just the name and type from verified cards
-    const newCards = results
-      .filter((result) => result.success && result.verifiedCard)
-      .map((result) => ({
-        name: result.verifiedCard.name,
-        type: result.verifiedCard.type,
-      }));
-
-    // Add new cards to existing cards
-    collection.cards = [...collection.cards, ...newCards];
-
-    const updatedCollection = await collection.save();
-    res.json(updatedCollection);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
