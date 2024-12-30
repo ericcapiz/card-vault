@@ -2,17 +2,29 @@ const express = require("express");
 const router = express.Router();
 const Collection = require("../../models/collection/Collection");
 const auth = require("../../middleware/auth");
+const jwt = require("jsonwebtoken");
 
-// Create collection - auth required
-router.post("/", auth, async (req, res) => {
+// Create collection - no auth required, but uses userId if available
+router.post("/", async (req, res) => {
   try {
     const { title, description, batchGroupId } = req.body;
+    const token = req.header("Authorization")?.replace("Bearer ", "");
+
+    let userId = null;
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        userId = decoded.userId;
+      } catch (error) {
+        // Token invalid - that's fine, continue as anonymous
+      }
+    }
 
     const collection = new Collection({
       title,
       description,
       batchGroupId,
-      userId: req.userId, // Must have userId since auth is required
+      userId: userId, // Will be null for anonymous users, set for logged-in users
     });
 
     const savedCollection = await collection.save();

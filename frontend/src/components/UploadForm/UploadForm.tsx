@@ -21,6 +21,7 @@ import {
 import type { RootState } from "@/store/store";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { fetchCollections } from "@/store/slices/collectionSlice";
+import api from "@/store/services/api";
 
 interface UploadFormProps {
   isAddingToCollection?: boolean;
@@ -71,25 +72,16 @@ export const UploadForm = ({
     if (!batchGroupId || batches.length === 0) return;
 
     try {
-      const token = localStorage.getItem("token");
       const url = isAddingToCollection
-        ? `https://card-vault.fly.dev/api/collections/${collectionId}/cards`
-        : "https://card-vault.fly.dev/api/collections";
+        ? `/api/collections/${collectionId}/cards`
+        : "/api/collections";
 
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(
-          isAddingToCollection
-            ? { cards: batches[0].cards }
-            : { title, description, batchGroupId }
-        ),
-      });
-
-      if (!response.ok) throw new Error("Failed to process cards");
+      const response = await api.post(
+        url,
+        isAddingToCollection
+          ? { cards: batches[0].cards }
+          : { title, description, batchGroupId }
+      );
 
       // Clear form
       setTitle("");
@@ -101,6 +93,11 @@ export const UploadForm = ({
 
       // Show success message
       setSuccessMessage("Collection created successfully!");
+
+      // Set new collection ID for download link
+      if (response.data?._id) {
+        setNewCollectionId(response.data._id);
+      }
 
       // Notify parent of success
       if (onSuccess) {
@@ -279,7 +276,7 @@ export const UploadForm = ({
                 component="button"
                 onClick={() =>
                   window.open(
-                    `https://card-vault.fly.dev/api/collections/${newCollectionId}/download`,
+                    `/api/collections/${newCollectionId}/download`,
                     "_blank"
                   )
                 }
