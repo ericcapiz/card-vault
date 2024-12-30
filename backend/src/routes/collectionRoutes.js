@@ -75,7 +75,11 @@ router.get("/:id/download", auth, async (req, res) => {
       { wch: 20 }, // Card Type column
     ];
 
-    XLSX.utils.book_append_sheet(wb, ws, "Cards");
+    // Use collection title as sheet name (sanitize it for Excel)
+    const sheetName = collection.title
+      .replace(/[\\*?:/[\]]/g, "")
+      .substring(0, 31);
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
 
     // Generate buffer
     const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
