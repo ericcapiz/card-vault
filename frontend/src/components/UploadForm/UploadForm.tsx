@@ -96,6 +96,12 @@ export const UploadForm = ({
       setDescription("");
       dispatch(clearBatches());
 
+      // Refresh collections list
+      dispatch(fetchCollections());
+
+      // Show success message
+      setSuccessMessage("Collection created successfully!");
+
       // Notify parent of success
       if (onSuccess) {
         onSuccess();
@@ -214,7 +220,7 @@ export const UploadForm = ({
           >
             {isAddingToCollection
               ? "Add Cards"
-              : "Create Collection ({batches.length} cards)"}
+              : `Create Collection (${batches.length} cards)`}
           </Button>
         </Box>
 

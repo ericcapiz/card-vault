@@ -147,7 +147,7 @@ export const addCardsToCollection = createAsyncThunk(
     try {
       const token = localStorage.getItem("token");
       const formData = new FormData();
-      files.forEach((file) => formData.append("files", file));
+      files.forEach((file) => formData.append("images", file));
 
       const response = await fetch(
         `https://card-vault.fly.dev/api/collections/${collectionId}/cards`,
@@ -160,7 +160,10 @@ export const addCardsToCollection = createAsyncThunk(
         }
       );
 
-      if (!response.ok) throw new Error("Failed to add cards");
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error);
+      }
       return await response.json();
     } catch (error) {
       return rejectWithValue(error.message);

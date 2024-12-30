@@ -22,7 +22,6 @@ import {
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import DownloadIcon from "@mui/icons-material/Download";
-import AddIcon from "@mui/icons-material/Add";
 import { UploadForm } from "@/components/UploadForm/UploadForm";
 import {
   fetchCollections,
@@ -40,6 +39,7 @@ interface EditDialogProps {
   collectionId: string;
   onClose: () => void;
   onSave: (title: string, description: string) => void;
+  setSuccessMessage: (message: string) => void;
 }
 
 const EditDialog = ({
@@ -49,6 +49,7 @@ const EditDialog = ({
   collectionId,
   onClose,
   onSave,
+  setSuccessMessage,
 }: EditDialogProps) => {
   const dispatch = useDispatch();
   const [newTitle, setNewTitle] = useState(title);
@@ -66,13 +67,27 @@ const EditDialog = ({
     try {
       await dispatch(addCardsToCollection({ collectionId, files })).unwrap();
       setFiles([]);
-      // Reset file input
       const fileInput = document.querySelector(
         'input[type="file"]'
       ) as HTMLInputElement;
       if (fileInput) fileInput.value = "";
+
+      // Show success message for adding cards
+      setSuccessMessage("Cards added successfully");
+      setTimeout(() => setSuccessMessage(""), 3000);
     } catch (error) {
       console.error("Failed to add cards:", error);
+      setSuccessMessage("Failed to add cards");
+      setTimeout(() => setSuccessMessage(""), 3000);
+    }
+  };
+
+  const handleSaveChanges = async () => {
+    try {
+      await onSave(newTitle, newDescription);
+      // Don't close the dialog here - let the parent handle it
+    } catch (error) {
+      console.error("Failed to save changes:", error);
     }
   };
 
@@ -80,12 +95,16 @@ const EditDialog = ({
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>Edit Collection</DialogTitle>
       <DialogContent>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}>
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: "bold" }}>
+            Collection Details
+          </Typography>
           <TextField
             label="Title"
             fullWidth
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
+            sx={{ mb: 2 }}
           />
           <TextField
             label="Description"
@@ -95,33 +114,34 @@ const EditDialog = ({
             value={newDescription}
             onChange={(e) => setNewDescription(e.target.value)}
           />
+        </Box>
 
-          <Typography variant="subtitle1" sx={{ mt: 2 }}>
-            Add Cards
+        <Box>
+          <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: "bold" }}>
+            Add New Cards
           </Typography>
           <input
             type="file"
             multiple
             accept="image/*"
-            onChange={handleFileChange}
+            onChange={(e) => setFiles(Array.from(e.target.files || []))}
           />
-
           {files.length > 0 && (
             <Button
               variant="contained"
               onClick={handleAddCards}
               sx={{
+                mt: 2,
                 bgcolor: "#9BA5D9",
-                "&:hover": {
-                  bgcolor: "#B8C0E9",
-                },
+                "&:hover": { bgcolor: "#B8C0E9" },
               }}
             >
-              Add Cards ({files.length} files)
+              Upload {files.length} Card{files.length > 1 ? "s" : ""}
             </Button>
           )}
         </Box>
       </DialogContent>
+
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
         <Button
@@ -134,7 +154,7 @@ const EditDialog = ({
             },
           }}
         >
-          Save
+          Save Collection Details
         </Button>
       </DialogActions>
     </Dialog>
@@ -150,11 +170,12 @@ const Profile = () => {
     (state: RootState) => state.collections?.loading ?? false
   );
   const [editingCollection, setEditingCollection] = useState<{
-    id: string;
+    _id: string;
     title: string;
     description: string;
   } | null>(null);
   const [addingCardsTo, setAddingCardsTo] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState("");
 
   useEffect(() => {
     dispatch(fetchCollections());
@@ -173,15 +194,27 @@ const Profile = () => {
   };
 
   const handleEditSave = async (title: string, description: string) => {
+    console.log("EditingCollection:", editingCollection);
+
     if (editingCollection) {
-      await dispatch(
-        updateCollection({
-          collectionId: editingCollection.id,
-          title,
-          description,
-        })
-      );
-      setEditingCollection(null);
+      try {
+        const result = await dispatch(
+          updateCollection({
+            collectionId: editingCollection._id,
+            title,
+            description,
+          })
+        ).unwrap();
+
+        console.log("Update result:", result);
+
+        setSuccessMessage("Collection updated successfully");
+        setEditingCollection(null);
+        setTimeout(() => setSuccessMessage(""), 3000);
+        dispatch(fetchCollections());
+      } catch (error) {
+        console.error("Failed to update collection:", error);
+      }
     }
   };
 
@@ -190,10 +223,6 @@ const Profile = () => {
       `https://card-vault.fly.dev/api/collections/${collectionId}/download`,
       "_blank"
     );
-  };
-
-  const handleAddCards = (collectionId: string) => {
-    setAddingCardsTo(collectionId);
   };
 
   return (
@@ -207,6 +236,25 @@ const Profile = () => {
         margin: "0 auto",
       }}
     >
+      {/* Success Message */}
+      {successMessage && (
+        <Box
+          sx={{
+            position: "fixed",
+            top: 20,
+            left: "50%",
+            transform: "translateX(-50%)",
+            bgcolor: "success.main",
+            color: "white",
+            p: 2,
+            borderRadius: 1,
+            zIndex: 9999,
+          }}
+        >
+          {successMessage}
+        </Box>
+      )}
+
       {/* Collections Section */}
       <Box
         sx={{
@@ -259,7 +307,7 @@ const Profile = () => {
                   size="small"
                   onClick={() =>
                     setEditingCollection({
-                      id: collection._id,
+                      _id: collection._id,
                       title: collection.title,
                       description: collection.description,
                     })
@@ -337,37 +385,16 @@ const Profile = () => {
         <UploadForm />
       </Box>
 
-      {/* Add Cards Dialog */}
-      {addingCardsTo && (
-        <Dialog
-          open={Boolean(addingCardsTo)}
-          onClose={() => setAddingCardsTo(null)}
-          maxWidth="md"
-          fullWidth
-        >
-          <DialogTitle>Add Cards to Collection</DialogTitle>
-          <DialogContent>
-            <UploadForm
-              isAddingToCollection={true}
-              collectionId={addingCardsTo}
-              onSuccess={() => {
-                setAddingCardsTo(null);
-                dispatch(fetchCollections());
-              }}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
-
       {/* Edit Dialog */}
       {editingCollection && (
         <EditDialog
           open={true}
           title={editingCollection.title}
           description={editingCollection.description}
-          collectionId={editingCollection.id}
+          collectionId={editingCollection._id}
           onClose={() => setEditingCollection(null)}
           onSave={handleEditSave}
+          setSuccessMessage={setSuccessMessage}
         />
       )}
     </Box>
