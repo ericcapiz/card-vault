@@ -84,10 +84,13 @@ router.get("/:id/download", auth, async (req, res) => {
     // Generate buffer
     const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
 
+    // Sanitize filename for download
+    const safeFilename = collection.title.replace(/[^a-zA-Z0-9-_]/g, "_");
+
     // Set headers for file download
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename="${collection.title}.xlsx"`
+      `attachment; filename="${safeFilename}.xlsx"`
     );
     res.setHeader(
       "Content-Type",
