@@ -188,7 +188,11 @@ router.get("/:id/download", async (req, res) => {
       }
     }
 
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Cards");
+    // Use collection title for the worksheet name (sanitized to remove invalid characters)
+    const sheetName = collection.title
+      .replace(/[\\*?:/[\]]/g, "")
+      .substring(0, 31); // Excel has 31 char limit
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
 
     // Write to buffer
     const buffer = XLSX.write(workbook, {
