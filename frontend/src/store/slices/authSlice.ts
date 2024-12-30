@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../services/api";
+import { clearCollections } from "./collectionSlice";
 
 interface AuthState {
   user: null | { username: string };
@@ -50,11 +51,28 @@ export const register = createAsyncThunk(
     try {
       const response = await api.post("/api/auth/register", credentials);
       localStorage.setItem("token", response.data.token);
+      localStorage.setItem("user", JSON.stringify(response.data.user));
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Registration failed"
       );
+    }
+  }
+);
+
+export const checkAuth = createAsyncThunk(
+  "auth/checkAuth",
+  async (token: string, { rejectWithValue }) => {
+    try {
+      const response = await api.get("/api/auth/verify", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data;
+    } catch (error: any) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      return rejectWithValue("Invalid token");
     }
   }
 );
@@ -112,6 +130,22 @@ const authSlice = createSlice({
       .addCase(register.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
+      })
+      // Add checkAuth cases
+      .addCase(checkAuth.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(checkAuth.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isAuthenticated = true;
+        state.user = action.payload.user;
+      })
+      .addCase(checkAuth.rejected, (state) => {
+        state.isLoading = false;
+        state.isAuthenticated = false;
+        state.user = null;
+        state.token = null;
       });
   },
 });

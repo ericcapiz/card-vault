@@ -174,7 +174,13 @@ export const addCardsToCollection = createAsyncThunk(
 const collectionSlice = createSlice({
   name: "collections",
   initialState,
-  reducers: {},
+  reducers: {
+    clearCollections: (state) => {
+      state.collections = [];
+      state.loading = false;
+      state.error = null;
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchCollections.pending, (state) => {
@@ -221,4 +227,5 @@ const collectionSlice = createSlice({
   },
 });
 
+export const { clearCollections } = collectionSlice.actions;
 export default collectionSlice.reducer;

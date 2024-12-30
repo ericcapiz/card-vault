@@ -5,8 +5,20 @@ import { UploadForm } from "@/components/UploadForm/UploadForm";
 import { Footer } from "@/components/Footer/Footer";
 import Profile from "@/pages/Profile";
 import ProtectedRoute from "@/components/ProtectedRoutes/ProtectedRoute";
+import { useEffect } from "react";
+import { useDispatch } from "react-redux";
+import { checkAuth } from "@/store/slices/authSlice";
 
 function App() {
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      dispatch(checkAuth(token));
+    }
+  }, [dispatch]);
+
   return (
     <BrowserRouter>
       <Box
