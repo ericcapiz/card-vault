@@ -4,6 +4,8 @@ const Collection = require("../../models/collection/Collection");
 const Batch = require("../../models/batch/Batch");
 const auth = require("../../middleware/auth");
 const XLSX = require("xlsx");
+const multer = require("multer");
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Create collection - auth required
 router.post("/", auth, async (req, res) => {
@@ -175,7 +177,7 @@ router.delete("/:id/cards/:cardIndex", auth, async (req, res) => {
 });
 
 // Add cards to collection - auth required
-router.post("/:id/cards", auth, async (req, res) => {
+router.post("/:id/cards", auth, upload.array("images"), async (req, res) => {
   try {
     const collection = await Collection.findOne({
       _id: req.params.id,
@@ -186,13 +188,26 @@ router.post("/:id/cards", auth, async (req, res) => {
       return res.status(404).json({ message: "Collection not found" });
     }
 
-    // Handle the new cards (this would depend on how you're sending the cards)
-    const newCards = req.body.cards;
-    collection.cards.push(...newCards);
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ message: "No files uploaded" });
+    }
 
+    // Process each uploaded file
+    const processedCards = req.files.map((file) => {
+      // Here you would process the image file and extract card info
+      // For now, let's just create a basic card entry
+      return {
+        name: file.originalname.replace(/\.[^/.]+$/, ""), // Remove file extension
+        type: "Unknown", // You'll need to implement proper type detection
+      };
+    });
+
+    // Add the new cards to the collection
+    collection.cards.push(...processedCards);
     const updatedCollection = await collection.save();
     res.json(updatedCollection);
   } catch (error) {
+    console.error("Error adding cards:", error);
     res.status(500).json({ message: error.message });
   }
 });

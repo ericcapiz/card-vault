@@ -221,7 +221,10 @@ const Profile = () => {
     }
   };
 
-  const handleDownload = async (collectionId: string) => {
+  const handleDownload = async (
+    collectionId: string,
+    collectionTitle: string
+  ) => {
     const token = localStorage.getItem("token");
 
     try {
@@ -230,23 +233,18 @@ const Profile = () => {
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            Accept:
-              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
           },
         }
       );
 
       if (!response.ok) throw new Error("Download failed");
 
-      // Get the filename from the Content-Disposition header if available
-      const contentDisposition = response.headers.get("Content-Disposition");
-      const filenameMatch =
-        contentDisposition && contentDisposition.match(/filename="(.+)"/);
-      const filename = filenameMatch
-        ? filenameMatch[1]
-        : `collection-${collectionId}.xlsx`;
-
       const blob = await response.blob();
+
+      // Use collection title for filename (sanitize it)
+      const safeFilename = collectionTitle.replace(/[^a-zA-Z0-9-_]/g, "_");
+      const filename = `${safeFilename}.xlsx`;
+
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -319,7 +317,9 @@ const Profile = () => {
                   <Box>
                     <IconButton
                       size="small"
-                      onClick={() => handleDownload(collection._id)}
+                      onClick={() =>
+                        handleDownload(collection._id, collection.title)
+                      }
                       sx={{
                         color: "#9BA5D9",
                         "&:hover": {
