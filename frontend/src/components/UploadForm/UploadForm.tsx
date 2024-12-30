@@ -9,6 +9,7 @@ import {
   List,
   ListItem,
   IconButton,
+  Link,
 } from "@mui/material";
 import { LoadingOverlay } from "../LoadingOverlay/LoadingOverlay";
 import {
@@ -27,6 +28,8 @@ export const UploadForm = () => {
   const [files, setFiles] = useState<File[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [newCollectionId, setNewCollectionId] = useState<string | null>(null);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(event.target.files || []);
@@ -73,6 +76,10 @@ export const UploadForm = () => {
       );
 
       if (!response.ok) throw new Error("Failed to create collection");
+
+      const collection = await response.json();
+      setSuccessMessage(`Collection created successfully: `);
+      setNewCollectionId(collection._id);
 
       // Clear form after successful creation
       setTitle("");
@@ -234,6 +241,33 @@ export const UploadForm = () => {
                 </ListItem>
               ))}
             </List>
+          </Box>
+        )}
+
+        {successMessage && newCollectionId && (
+          <Box sx={{ mb: 3, textAlign: "center" }}>
+            <Typography color="success.main">
+              {successMessage}
+              <Link
+                component="button"
+                onClick={() =>
+                  window.open(
+                    `https://card-vault.fly.dev/api/collections/${newCollectionId}/download`,
+                    "_blank"
+                  )
+                }
+                sx={{
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                  color: "#9BA5D9",
+                  "&:hover": {
+                    color: "#B8C0E9",
+                  },
+                }}
+              >
+                {title || "collection"} (click to download spreadsheet)
+              </Link>
+            </Typography>
           </Box>
         )}
       </Box>
