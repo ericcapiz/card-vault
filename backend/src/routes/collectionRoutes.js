@@ -3,17 +3,16 @@ const router = express.Router();
 const Collection = require("../../models/collection/Collection");
 const auth = require("../../middleware/auth");
 
-// Create collection - no auth required
-router.post("/", async (req, res) => {
+// Create collection - auth required
+router.post("/", auth, async (req, res) => {
   try {
     const { title, description, batchGroupId } = req.body;
 
-    // Create collection without userId for anonymous users
     const collection = new Collection({
       title,
       description,
       batchGroupId,
-      userId: req.userId || null, // Will be null for anonymous users
+      userId: req.userId, // Must have userId since auth is required
     });
 
     const savedCollection = await collection.save();
