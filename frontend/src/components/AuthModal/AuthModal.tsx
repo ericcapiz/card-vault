@@ -10,7 +10,12 @@ import {
   Typography,
   CircularProgress,
 } from "@mui/material";
-import { login, register, toggleAuthMode } from "@/store/slices/authSlice";
+import {
+  login,
+  register,
+  toggleAuthMode,
+  clearError,
+} from "@/store/slices/authSlice";
 import { RootState } from "@/store/store";
 import type { AppDispatch } from "@/store/store";
 
@@ -31,23 +36,56 @@ export const AuthModal = ({ open, onClose }: AuthModalProps) => {
     password: "",
   });
 
+  const handleClose = () => {
+    setFormData({
+      username: "",
+      email: "",
+      password: "",
+    });
+    onClose();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (isLoginMode) {
-      await dispatch(
+      const result = await dispatch(
         login({
           username: formData.username,
           password: formData.password,
         })
       );
-    } else {
-      await dispatch(register(formData));
-    }
 
-    if (!error) {
-      onClose();
+      if (result.type === "auth/login/fulfilled") {
+        setFormData({ username: "", email: "", password: "" });
+        handleClose();
+      } else {
+        // Clear error after 3 seconds
+        setTimeout(() => {
+          dispatch(clearError());
+        }, 3000);
+      }
+    } else {
+      const result = await dispatch(register(formData));
+      if (result.type === "auth/register/fulfilled") {
+        setFormData({ username: "", email: "", password: "" });
+        handleClose();
+      } else {
+        // Clear error after 3 seconds
+        setTimeout(() => {
+          dispatch(clearError());
+        }, 3000);
+      }
     }
+  };
+
+  const handleModeToggle = () => {
+    setFormData({
+      username: "",
+      email: "",
+      password: "",
+    });
+    dispatch(toggleAuthMode());
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -84,7 +122,7 @@ export const AuthModal = ({ open, onClose }: AuthModalProps) => {
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       maxWidth="xs"
       fullWidth
       PaperProps={{
@@ -169,7 +207,7 @@ export const AuthModal = ({ open, onClose }: AuthModalProps) => {
 
           <Button
             variant="text"
-            onClick={() => dispatch(toggleAuthMode())}
+            onClick={handleModeToggle}
             sx={{
               mt: 1,
               color: "#9BA5D9",

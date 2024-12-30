@@ -20,6 +20,7 @@ import {
 } from "@/store/slices/uploadSlice";
 import type { RootState } from "@/store/store";
 import DeleteIcon from "@mui/icons-material/Delete";
+import { fetchCollections } from "@/store/slices/collectionSlice";
 
 export const UploadForm = () => {
   const dispatch = useDispatch();
@@ -87,6 +88,9 @@ export const UploadForm = () => {
       setTitle("");
       setDescription("");
       dispatch(clearBatches());
+
+      // Fetch updated collections
+      dispatch(fetchCollections());
 
       // Clear success message after 5 seconds
       setTimeout(() => {

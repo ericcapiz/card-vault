@@ -69,9 +69,14 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       localStorage.removeItem("token");
       localStorage.removeItem("user");
+      localStorage.removeItem("formData");
     },
     toggleAuthMode: (state) => {
       state.isLoginMode = !state.isLoginMode;
+      state.error = null;
+      localStorage.removeItem("formData");
+    },
+    clearError: (state) => {
       state.error = null;
     },
   },
@@ -87,6 +92,7 @@ const authSlice = createSlice({
         state.isAuthenticated = true;
         state.user = action.payload.user;
         state.token = action.payload.token;
+        localStorage.removeItem("formData");
       })
       .addCase(login.rejected, (state, action) => {
         state.isLoading = false;
@@ -110,5 +116,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout, toggleAuthMode } = authSlice.actions;
+export const { logout, toggleAuthMode, clearError } = authSlice.actions;
 export default authSlice.reducer;

@@ -71,8 +71,30 @@ const EditDialog = ({
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={() => onSave(newTitle, newDescription)}>Save</Button>
+        <Button
+          onClick={onClose}
+          sx={{
+            color: "rgba(255, 255, 255, 0.7)",
+            "&:hover": {
+              color: "#fff",
+              backgroundColor: "rgba(255, 255, 255, 0.08)",
+            },
+          }}
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={() => onSave(newTitle, newDescription)}
+          sx={{
+            color: "#9BA5D9",
+            "&:hover": {
+              color: "#B8C0E9",
+              backgroundColor: "rgba(155, 165, 217, 0.08)",
+            },
+          }}
+        >
+          Save
+        </Button>
       </DialogActions>
     </Dialog>
   );

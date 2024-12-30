@@ -4,6 +4,7 @@ import { Navbar } from "@/components/Navbar/Navbar";
 import { UploadForm } from "@/components/UploadForm/UploadForm";
 import { Footer } from "@/components/Footer/Footer";
 import Profile from "@/pages/Profile";
+import ProtectedRoute from "@/components/ProtectedRoutes/ProtectedRoute";
 
 function App() {
   return (
@@ -32,7 +33,14 @@ function App() {
         >
           <Routes>
             <Route path="/" element={<UploadForm />} />
-            <Route path="/profile" element={<Profile />} />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
           </Routes>
         </Box>
         <Footer />
