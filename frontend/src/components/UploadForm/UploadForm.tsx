@@ -40,8 +40,18 @@ export const UploadForm = ({
   const [files, setFiles] = useState<File[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState("");
   const [newCollectionId, setNewCollectionId] = useState<string | null>(null);
+
+  // Clear success message after 10 seconds
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage("");
+      }, 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(event.target.files || []);
@@ -92,7 +102,9 @@ export const UploadForm = ({
       dispatch(fetchCollections());
 
       // Show success message
-      setSuccessMessage("Collection created successfully!");
+      setSuccessMessage(
+        "Collection created successfully! You can download it from the collections table."
+      );
 
       // Set new collection ID for download link
       if (response.data?._id) {
@@ -279,30 +291,9 @@ export const UploadForm = ({
             </Box>
           )}
 
-          {successMessage && newCollectionId && (
-            <Box sx={{ mb: 3, textAlign: "center" }}>
-              <Typography color="success.main">
-                {successMessage}
-                <Link
-                  component="button"
-                  onClick={() =>
-                    window.open(
-                      `/api/collections/${newCollectionId}/download`,
-                      "_blank"
-                    )
-                  }
-                  sx={{
-                    cursor: "pointer",
-                    textDecoration: "underline",
-                    color: "#9BA5D9",
-                    "&:hover": {
-                      color: "#B8C0E9",
-                    },
-                  }}
-                >
-                  {title || "collection"} (click to download spreadsheet)
-                </Link>
-              </Typography>
+          {successMessage && (
+            <Box sx={{ mt: 2, textAlign: "center" }}>
+              <Typography color="success.main">{successMessage}</Typography>
             </Box>
           )}
         </Box>

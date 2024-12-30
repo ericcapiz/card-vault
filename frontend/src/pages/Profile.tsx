@@ -57,6 +57,13 @@ const EditDialog = ({
   const [newDescription, setNewDescription] = useState(description);
   const [files, setFiles] = useState<File[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [isSaveEnabled, setIsSaveEnabled] = useState(false);
+
+  // Enable save button if title/description changed
+  useEffect(() => {
+    setIsSaveEnabled(newTitle !== title || newDescription !== description);
+  }, [newTitle, newDescription, title, description]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files) return;
@@ -74,8 +81,14 @@ const EditDialog = ({
         'input[type="file"]'
       ) as HTMLInputElement;
       if (fileInput) fileInput.value = "";
-      setSuccessMessage("Cards added successfully");
-      setTimeout(() => setSuccessMessage(""), 3000);
+      setUploadSuccess(true);
+      setSuccessMessage(
+        `Successfully added ${files.length} card${files.length > 1 ? "s" : ""}`
+      );
+      setTimeout(() => {
+        setUploadSuccess(false);
+        setSuccessMessage("");
+      }, 3000);
     } catch (error) {
       console.error("Failed to add cards:", error);
       setSuccessMessage("Failed to add cards");
@@ -128,6 +141,7 @@ const EditDialog = ({
               <Button
                 variant="contained"
                 onClick={handleAddCards}
+                disabled={isProcessing}
                 sx={{
                   mt: 2,
                   bgcolor: "#9BA5D9",
@@ -136,6 +150,11 @@ const EditDialog = ({
               >
                 Upload {files.length} Card{files.length > 1 ? "s" : ""}
               </Button>
+            )}
+            {uploadSuccess && (
+              <Typography color="success.main" sx={{ mt: 1 }}>
+                Cards uploaded successfully!
+              </Typography>
             )}
           </Box>
         </Box>
@@ -154,12 +173,15 @@ const EditDialog = ({
         </Button>
         <Button
           onClick={() => onSave(newTitle, newDescription)}
+          disabled={!isSaveEnabled}
           sx={{
-            color: "#9BA5D9",
-            "&:hover": {
-              color: "#B8C0E9",
-              backgroundColor: "rgba(155, 165, 217, 0.08)",
-            },
+            color: isSaveEnabled ? "#9BA5D9" : "rgba(255, 255, 255, 0.3)",
+            "&:hover": isSaveEnabled
+              ? {
+                  color: "#B8C0E9",
+                  backgroundColor: "rgba(155, 165, 217, 0.08)",
+                }
+              : {},
           }}
         >
           Save Collection Details

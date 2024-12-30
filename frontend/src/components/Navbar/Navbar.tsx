@@ -138,12 +138,33 @@ export const Navbar = () => {
           <Box>
             {isAuthenticated ? (
               <>
-                <NavLink to="/profile" sx={{ mr: 2 }}>
+                <NavLink
+                  to="/profile"
+                  sx={{
+                    mr: 2,
+                    verticalAlign: "middle",
+                    display: "inline-flex",
+                    alignItems: "center",
+                  }}
+                >
                   <Typography>Hello, {user?.username.toUpperCase()}</Typography>
                 </NavLink>
-                <StyledButton color="inherit" onClick={handleLogout}>
-                  Logout
-                </StyledButton>
+                <Button
+                  onClick={handleLogout}
+                  sx={{
+                    color: "white",
+                    textTransform: "none",
+                    minWidth: "auto",
+                    padding: "6px 16px",
+                    height: 36,
+                    fontSize: "16px",
+                    "&:hover": {
+                      backgroundColor: "rgba(255, 255, 255, 0.08)",
+                    },
+                  }}
+                >
+                  LOGOUT
+                </Button>
               </>
             ) : (
               <StyledButton
