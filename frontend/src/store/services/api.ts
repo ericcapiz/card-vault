@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "https://card-vault.fly.dev",
+  baseURL: import.meta.env.VITE_API_URL || "https://card-vault.fly.dev",
   headers: {
     "Content-Type": "application/json",
   },
