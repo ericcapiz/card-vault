@@ -221,193 +221,211 @@ const Profile = () => {
     }
   };
 
-  const handleDownload = (collectionId: string) => {
-    window.open(
-      `https://card-vault.fly.dev/api/collections/${collectionId}/download`,
-      "_blank"
-    );
+  const handleDownload = async (collectionId: string) => {
+    const token = localStorage.getItem("token");
+
+    try {
+      const response = await fetch(
+        `https://card-vault.fly.dev/api/collections/${collectionId}/download`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept:
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          },
+        }
+      );
+
+      if (!response.ok) throw new Error("Download failed");
+
+      // Get the filename from the Content-Disposition header if available
+      const contentDisposition = response.headers.get("Content-Disposition");
+      const filenameMatch =
+        contentDisposition && contentDisposition.match(/filename="(.+)"/);
+      const filename = filenameMatch
+        ? filenameMatch[1]
+        : `collection-${collectionId}.xlsx`;
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error("Download failed:", error);
+    }
   };
 
   return (
     <Box
       sx={{
+        minHeight: "calc(100vh - 64px)",
         display: "flex",
-        flexDirection: {
-          xs: "column",
-          md: collections.length ? "row" : "column",
-        },
-        gap: { xs: 2, md: 4 },
-        width: "100%",
-        maxWidth: "1400px",
-        margin: "0 auto",
-        justifyContent: collections.length ? "flex-start" : "center",
+        justifyContent: "center",
+        alignItems: "flex-start",
+        pt: 10,
+        px: 3,
       }}
     >
-      {/* Success Message */}
-      {successMessage && (
-        <Box
-          sx={{
-            position: "fixed",
-            top: 20,
-            left: "50%",
-            transform: "translateX(-50%)",
-            bgcolor: "success.main",
-            color: "white",
-            p: 2,
-            borderRadius: 1,
-            zIndex: 9999,
-          }}
-        >
-          {successMessage}
-        </Box>
-      )}
-
-      {/* Collections Section */}
-      {collections.length > 0 && (
-        <Box
-          sx={{
-            flex: { xs: "1", md: "2" },
-            width: "100%",
-            overflow: "auto",
-          }}
-        >
-          <Typography variant="h5" sx={{ mb: 3 }}>
-            Collections ({collections.length})
-          </Typography>
-
-          {collections.map((collection) => (
-            <Paper key={collection._id} sx={{ mb: 4, overflow: "hidden" }}>
-              <Box
-                sx={{
-                  p: 2,
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  borderBottom: 1,
-                  borderColor: "divider",
-                }}
-              >
-                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                  <Tooltip
-                    title={collection.description || "No description"}
-                    placement="top"
-                    arrow
-                  >
-                    <Typography variant="h6">
-                      {collection.title} ({collection.cards.length})
-                    </Typography>
-                  </Tooltip>
-                </Box>
-                <Box>
-                  <IconButton
-                    size="small"
-                    onClick={() => handleDownload(collection._id)}
-                    sx={{
-                      color: "#9BA5D9",
-                      "&:hover": {
-                        backgroundColor: "rgba(155, 165, 217, 0.08)",
-                      },
-                    }}
-                  >
-                    <DownloadIcon />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    onClick={() =>
-                      setEditingCollection({
-                        _id: collection._id,
-                        title: collection.title,
-                        description: collection.description,
-                      })
-                    }
-                    sx={{
-                      color: "text.secondary",
-                      "&:hover": {
-                        backgroundColor: "rgba(255, 255, 255, 0.08)",
-                      },
-                    }}
-                  >
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    onClick={() => handleDeleteCollection(collection._id)}
-                    sx={{
-                      color: "error.main",
-                      "&:hover": {
-                        backgroundColor: "rgba(255, 99, 71, 0.08)",
-                      },
-                    }}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </Box>
-              </Box>
-
-              <TableContainer>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Card Name</TableCell>
-                      <TableCell>Type</TableCell>
-                      <TableCell align="right">Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {collection.cards.map((card, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{card.name}</TableCell>
-                        <TableCell>{card.type}</TableCell>
-                        <TableCell align="right">
-                          <IconButton
-                            size="small"
-                            onClick={() =>
-                              handleDeleteCard(collection._id, index)
-                            }
-                            sx={{
-                              color: "error.main",
-                              "&:hover": {
-                                backgroundColor: "rgba(255, 99, 71, 0.08)",
-                              },
-                            }}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Paper>
-          ))}
-        </Box>
-      )}
-
-      {/* Form Section */}
       <Box
         sx={{
-          flex: { xs: "1", md: collections.length ? "1" : "auto" },
+          display: "flex",
+          flexDirection: {
+            xs: "column",
+            md: collections.length ? "row" : "column",
+          },
+          gap: { xs: 2, md: 4 },
           width: "100%",
-          maxWidth: collections.length ? "none" : "800px",
-          margin: collections.length ? "0" : "0 auto",
+          maxWidth: "1400px",
+          alignItems: "center",
         }}
       >
-        <UploadForm />
-      </Box>
+        {/* Collections Section */}
+        {collections.length > 0 && (
+          <Box
+            sx={{ flex: { xs: "1", md: "2" }, width: "100%", overflow: "auto" }}
+          >
+            <Typography variant="h5" sx={{ mb: 3 }}>
+              Collections ({collections.length})
+            </Typography>
 
-      {/* Edit Dialog */}
-      {editingCollection && (
-        <EditDialog
-          open={true}
-          title={editingCollection.title}
-          description={editingCollection.description}
-          collectionId={editingCollection._id}
-          onClose={() => setEditingCollection(null)}
-          onSave={handleEditSave}
-          setSuccessMessage={setSuccessMessage}
-        />
-      )}
+            {collections.map((collection) => (
+              <Paper key={collection._id} sx={{ mb: 4, overflow: "hidden" }}>
+                <Box
+                  sx={{
+                    p: 2,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    borderBottom: 1,
+                    borderColor: "divider",
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <Tooltip
+                      title={collection.description || "No description"}
+                      placement="top"
+                      arrow
+                    >
+                      <Typography variant="h6">
+                        {collection.title} ({collection.cards.length})
+                      </Typography>
+                    </Tooltip>
+                  </Box>
+                  <Box>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleDownload(collection._id)}
+                      sx={{
+                        color: "#9BA5D9",
+                        "&:hover": {
+                          backgroundColor: "rgba(155, 165, 217, 0.08)",
+                        },
+                      }}
+                    >
+                      <DownloadIcon />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() =>
+                        setEditingCollection({
+                          _id: collection._id,
+                          title: collection.title,
+                          description: collection.description,
+                        })
+                      }
+                      sx={{
+                        color: "text.secondary",
+                        "&:hover": {
+                          backgroundColor: "rgba(255, 255, 255, 0.08)",
+                        },
+                      }}
+                    >
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleDeleteCollection(collection._id)}
+                      sx={{
+                        color: "error.main",
+                        "&:hover": {
+                          backgroundColor: "rgba(255, 99, 71, 0.08)",
+                        },
+                      }}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Box>
+                </Box>
+
+                <TableContainer>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Card Name</TableCell>
+                        <TableCell>Type</TableCell>
+                        <TableCell align="right">Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {collection.cards.map((card, index) => (
+                        <TableRow key={index}>
+                          <TableCell>{card.name}</TableCell>
+                          <TableCell>{card.type}</TableCell>
+                          <TableCell align="right">
+                            <IconButton
+                              size="small"
+                              onClick={() =>
+                                handleDeleteCard(collection._id, index)
+                              }
+                              sx={{
+                                color: "error.main",
+                                "&:hover": {
+                                  backgroundColor: "rgba(255, 99, 71, 0.08)",
+                                },
+                              }}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Paper>
+            ))}
+          </Box>
+        )}
+
+        {/* Form Section */}
+        <Box
+          sx={{
+            flex: { xs: "1", md: collections.length ? "1" : "auto" },
+            width: "100%",
+            maxWidth: collections.length ? "none" : "800px",
+          }}
+        >
+          <UploadForm />
+        </Box>
+
+        {/* Edit Dialog */}
+        {editingCollection && (
+          <EditDialog
+            open={true}
+            title={editingCollection.title}
+            description={editingCollection.description}
+            collectionId={editingCollection._id}
+            onClose={() => setEditingCollection(null)}
+            onSave={handleEditSave}
+            setSuccessMessage={setSuccessMessage}
+          />
+        )}
+      </Box>
     </Box>
   );
 };

@@ -5,6 +5,7 @@ import ProtectedRoute from "./components/ProtectedRoutes/ProtectedRoute";
 import { UploadForm } from "./components/UploadForm/UploadForm";
 import { Navbar } from "./components/Navbar/Navbar";
 import Home from "./pages/Home";
+import Profile from "./pages/Profile";
 
 function App() {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
@@ -19,6 +20,14 @@ function App() {
           element={
             <ProtectedRoute>
               <UploadForm />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
             </ProtectedRoute>
           }
         />
