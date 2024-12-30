@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const Collection = require("../models/Collection");
+const Collection = require("../models/collection/Collection");
 const auth = require("../middleware/auth");
 
 // Create collection - no auth required
