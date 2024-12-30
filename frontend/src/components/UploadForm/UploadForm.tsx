@@ -60,12 +60,14 @@ export const UploadForm = () => {
     if (!batchGroupId || batches.length === 0) return;
 
     try {
+      const token = localStorage.getItem("token");
       const response = await fetch(
         "https://card-vault.fly.dev/api/collections",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             title,
@@ -86,11 +88,11 @@ export const UploadForm = () => {
       setDescription("");
       dispatch(clearBatches());
 
-      // Clear success message after 10 seconds
+      // Clear success message after 5 seconds
       setTimeout(() => {
         setSuccessMessage(null);
         setNewCollectionId(null);
-      }, 10000);
+      }, 5000);
     } catch (error) {
       console.error("Failed to create collection:", error);
     }

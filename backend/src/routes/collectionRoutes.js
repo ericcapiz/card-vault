@@ -13,14 +13,16 @@ router.post("/", async (req, res) => {
 
     // Get token from header
     const token = req.header("Authorization")?.replace("Bearer ", "");
-    let userId = null;
-    if (token) {
-      try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        userId = decoded.userId;
-      } catch (error) {
-        // Token invalid - continue with null userId
-      }
+    if (!token) {
+      return res.status(401).json({ message: "No token provided" });
+    }
+
+    let userId;
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      userId = decoded.userId;
+    } catch (error) {
+      return res.status(401).json({ message: "Invalid token" });
     }
 
     // Get cards from batch
