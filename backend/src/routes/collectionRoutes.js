@@ -47,6 +47,71 @@ router.post("/", async (req, res) => {
   }
 });
 
+// Get all collections for logged-in user
+router.get("/", async (req, res) => {
+  try {
+    const token = req.header("Authorization")?.replace("Bearer ", "");
+    if (!token) {
+      return res.status(401).json({ message: "No token provided" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const collections = await Collection.find({ userId: decoded.userId });
+    res.json(collections);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Update collection title/description
+router.put("/:id", async (req, res) => {
+  try {
+    const { title, description } = req.body;
+    const collection = await Collection.findById(req.params.id);
+
+    if (!collection) {
+      return res.status(404).json({ message: "Collection not found" });
+    }
+
+    collection.title = title || collection.title;
+    collection.description = description || collection.description;
+
+    const updatedCollection = await collection.save();
+    res.json(updatedCollection);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Delete collection
+router.delete("/:id", async (req, res) => {
+  try {
+    const collection = await Collection.findByIdAndDelete(req.params.id);
+    if (!collection) {
+      return res.status(404).json({ message: "Collection not found" });
+    }
+    res.json({ message: "Collection deleted" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Delete card from collection
+router.delete("/:id/cards/:cardIndex", async (req, res) => {
+  try {
+    const collection = await Collection.findById(req.params.id);
+    if (!collection) {
+      return res.status(404).json({ message: "Collection not found" });
+    }
+
+    collection.cards.splice(parseInt(req.params.cardIndex), 1);
+    await collection.save();
+    res.json(collection);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Download collection as Excel spreadsheet
 router.get("/:id/download", async (req, res) => {
   try {

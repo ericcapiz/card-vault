@@ -85,6 +85,12 @@ export const UploadForm = () => {
       setTitle("");
       setDescription("");
       dispatch(clearBatches());
+
+      // Clear success message after 10 seconds
+      setTimeout(() => {
+        setSuccessMessage(null);
+        setNewCollectionId(null);
+      }, 10000);
     } catch (error) {
       console.error("Failed to create collection:", error);
     }

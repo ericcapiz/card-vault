@@ -10,10 +10,15 @@ interface AuthState {
   isLoginMode: boolean;
 }
 
+// Get persisted data
+const token = localStorage.getItem("token");
+const userStr = localStorage.getItem("user");
+const user = userStr ? JSON.parse(userStr) : null;
+
 const initialState: AuthState = {
-  user: null,
-  token: localStorage.getItem("token"),
-  isAuthenticated: false,
+  user: user,
+  token: token,
+  isAuthenticated: !!token && !!user, // Only authenticated if both exist
   isLoading: false,
   error: null,
   isLoginMode: true,
@@ -28,6 +33,7 @@ export const login = createAsyncThunk(
     try {
       const response = await api.post("/api/auth/login", credentials);
       localStorage.setItem("token", response.data.token);
+      localStorage.setItem("user", JSON.stringify(response.data.user));
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || "Login failed");
@@ -62,6 +68,7 @@ const authSlice = createSlice({
       state.token = null;
       state.isAuthenticated = false;
       localStorage.removeItem("token");
+      localStorage.removeItem("user");
     },
     toggleAuthMode: (state) => {
       state.isLoginMode = !state.isLoginMode;
