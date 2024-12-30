@@ -29,6 +29,7 @@ import {
   deleteCollection,
   deleteCardFromCollection,
   updateCollection,
+  addCardsToCollection,
 } from "@/store/slices/collectionSlice";
 import type { RootState } from "@/store/store";
 
@@ -36,6 +37,7 @@ interface EditDialogProps {
   open: boolean;
   title: string;
   description: string;
+  collectionId: string;
   onClose: () => void;
   onSave: (title: string, description: string) => void;
 }
@@ -44,47 +46,84 @@ const EditDialog = ({
   open,
   title,
   description,
+  collectionId,
   onClose,
   onSave,
 }: EditDialogProps) => {
+  const dispatch = useDispatch();
   const [newTitle, setNewTitle] = useState(title);
   const [newDescription, setNewDescription] = useState(description);
+  const [files, setFiles] = useState<File[]>([]);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files) return;
+    setFiles(Array.from(event.target.files));
+  };
+
+  const handleAddCards = async () => {
+    if (files.length === 0) return;
+
+    try {
+      await dispatch(addCardsToCollection({ collectionId, files })).unwrap();
+      setFiles([]);
+      // Reset file input
+      const fileInput = document.querySelector(
+        'input[type="file"]'
+      ) as HTMLInputElement;
+      if (fileInput) fileInput.value = "";
+    } catch (error) {
+      console.error("Failed to add cards:", error);
+    }
+  };
 
   return (
-    <Dialog open={open} onClose={onClose}>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>Edit Collection</DialogTitle>
       <DialogContent>
-        <TextField
-          autoFocus
-          margin="dense"
-          label="Title"
-          fullWidth
-          value={newTitle}
-          onChange={(e) => setNewTitle(e.target.value)}
-        />
-        <TextField
-          margin="dense"
-          label="Description"
-          fullWidth
-          multiline
-          rows={3}
-          value={newDescription}
-          onChange={(e) => setNewDescription(e.target.value)}
-        />
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}>
+          <TextField
+            label="Title"
+            fullWidth
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+          />
+          <TextField
+            label="Description"
+            fullWidth
+            multiline
+            rows={3}
+            value={newDescription}
+            onChange={(e) => setNewDescription(e.target.value)}
+          />
+
+          <Typography variant="subtitle1" sx={{ mt: 2 }}>
+            Add Cards
+          </Typography>
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            onChange={handleFileChange}
+          />
+
+          {files.length > 0 && (
+            <Button
+              variant="contained"
+              onClick={handleAddCards}
+              sx={{
+                bgcolor: "#9BA5D9",
+                "&:hover": {
+                  bgcolor: "#B8C0E9",
+                },
+              }}
+            >
+              Add Cards ({files.length} files)
+            </Button>
+          )}
+        </Box>
       </DialogContent>
       <DialogActions>
-        <Button
-          onClick={onClose}
-          sx={{
-            color: "rgba(255, 255, 255, 0.7)",
-            "&:hover": {
-              color: "#fff",
-              backgroundColor: "rgba(255, 255, 255, 0.08)",
-            },
-          }}
-        >
-          Cancel
-        </Button>
+        <Button onClick={onClose}>Cancel</Button>
         <Button
           onClick={() => onSave(newTitle, newDescription)}
           sx={{
@@ -204,18 +243,6 @@ const Profile = () => {
                 </Tooltip>
               </Box>
               <Box>
-                <IconButton
-                  size="small"
-                  onClick={() => handleAddCards(collection._id)}
-                  sx={{
-                    color: "#9BA5D9",
-                    "&:hover": {
-                      backgroundColor: "rgba(155, 165, 217, 0.08)",
-                    },
-                  }}
-                >
-                  <AddIcon />
-                </IconButton>
                 <IconButton
                   size="small"
                   onClick={() => handleDownload(collection._id)}
@@ -338,6 +365,7 @@ const Profile = () => {
           open={true}
           title={editingCollection.title}
           description={editingCollection.description}
+          collectionId={editingCollection.id}
           onClose={() => setEditingCollection(null)}
           onSave={handleEditSave}
         />

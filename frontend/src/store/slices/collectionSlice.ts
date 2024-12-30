@@ -24,6 +24,11 @@ interface UpdateCollectionData {
   description?: string;
 }
 
+interface AddCardsData {
+  collectionId: string;
+  files: File[];
+}
+
 const initialState: CollectionState = {
   collections: [],
   loading: false,
@@ -136,6 +141,33 @@ export const updateCollection = createAsyncThunk(
   }
 );
 
+export const addCardsToCollection = createAsyncThunk(
+  "collections/addCards",
+  async ({ collectionId, files }: AddCardsData, { rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem("token");
+      const formData = new FormData();
+      files.forEach((file) => formData.append("files", file));
+
+      const response = await fetch(
+        `https://card-vault.fly.dev/api/collections/${collectionId}/cards`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to add cards");
+      return await response.json();
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 const collectionSlice = createSlice({
   name: "collections",
   initialState,
@@ -168,6 +200,14 @@ const collectionSlice = createSlice({
         }
       })
       .addCase(updateCollection.fulfilled, (state, action) => {
+        const index = state.collections.findIndex(
+          (c) => c._id === action.payload._id
+        );
+        if (index !== -1) {
+          state.collections[index] = action.payload;
+        }
+      })
+      .addCase(addCardsToCollection.fulfilled, (state, action) => {
         const index = state.collections.findIndex(
           (c) => c._id === action.payload._id
         );

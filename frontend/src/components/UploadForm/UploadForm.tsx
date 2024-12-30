@@ -126,7 +126,7 @@ export const UploadForm = ({
         component="form"
         sx={{ display: "flex", flexDirection: "column", gap: 3 }}
       >
-        {isAddingToCollection && (
+        {!isAddingToCollection && (
           <>
             <TextField
               required

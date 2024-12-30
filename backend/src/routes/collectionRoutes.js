@@ -5,6 +5,9 @@ const Batch = require("../../models/batch/Batch");
 const auth = require("../../middleware/auth");
 const jwt = require("jsonwebtoken");
 const XLSX = require("xlsx");
+const multer = require("multer");
+const upload = multer({ storage: multer.memoryStorage() });
+const { processImage } = require("../utils/ocrUtils");
 
 // Create initial collection
 router.post("/", async (req, res) => {
@@ -210,17 +213,31 @@ router.get("/:id/download", async (req, res) => {
 });
 
 // Add cards to collection
-router.post("/:id/cards", async (req, res) => {
+router.post("/:id/cards", upload.array("images", 10), async (req, res) => {
   try {
-    const { cards } = req.body;
     const collection = await Collection.findById(req.params.id);
-
     if (!collection) {
       return res.status(404).json({ message: "Collection not found" });
     }
 
+    const files = req.files;
+    if (!files || files.length === 0) {
+      return res.status(400).json({ message: "No images provided" });
+    }
+
+    // Process all images in parallel using shared OCR utility
+    const results = await Promise.all(files.map(processImage));
+
+    // Extract just the name and type from verified cards
+    const newCards = results
+      .filter((result) => result.success && result.verifiedCard)
+      .map((result) => ({
+        name: result.verifiedCard.name,
+        type: result.verifiedCard.type,
+      }));
+
     // Add new cards to existing cards
-    collection.cards = [...collection.cards, ...cards];
+    collection.cards = [...collection.cards, ...newCards];
 
     const updatedCollection = await collection.save();
     res.json(updatedCollection);
