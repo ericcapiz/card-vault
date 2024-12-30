@@ -11,15 +11,19 @@ import {
   IconButton,
 } from "@mui/material";
 import { LoadingOverlay } from "../LoadingOverlay/LoadingOverlay";
-import { processImageBatch, removeBatch } from "@/store/slices/uploadSlice";
+import {
+  processImageBatch,
+  removeBatch,
+  clearBatches,
+  deleteCardFromBatch,
+} from "@/store/slices/uploadSlice";
 import type { RootState } from "@/store/store";
 import DeleteIcon from "@mui/icons-material/Delete";
 
 export const UploadForm = () => {
   const dispatch = useDispatch();
-  const { isProcessing, batches, currentBatchError } = useSelector(
-    (state: RootState) => state.upload
-  );
+  const { isProcessing, batches, currentBatchError, batchGroupId } =
+    useSelector((state: RootState) => state.upload);
   const [files, setFiles] = useState<File[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -49,18 +53,35 @@ export const UploadForm = () => {
     }
   };
 
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (batches.length > 0) {
-        e.preventDefault();
-        e.returnValue = "";
-        return "";
-      }
-    };
+  const handleCreateCollection = async () => {
+    if (!batchGroupId || batches.length === 0) return;
 
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [batches.length]);
+    try {
+      const response = await fetch(
+        "https://card-vault.fly.dev/api/collections",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title,
+            description,
+            batchGroupId,
+          }),
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to create collection");
+
+      // Clear form after successful creation
+      setTitle("");
+      setDescription("");
+      dispatch(clearBatches());
+    } catch (error) {
+      console.error("Failed to create collection:", error);
+    }
+  };
 
   return (
     <Paper
@@ -91,6 +112,7 @@ export const UploadForm = () => {
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Enter collection title"
           variant="outlined"
+          autoComplete="off"
           sx={{
             "& .MuiOutlinedInput-root": {
               "&.Mui-focused fieldset": {
@@ -158,74 +180,63 @@ export const UploadForm = () => {
             Upload Batch ({files.length} files)
           </Button>
 
-          <Button variant="contained" disabled={true} sx={{ flex: 1 }}>
-            Process Collection ({batches.length} batches)
+          <Button
+            variant="contained"
+            onClick={handleCreateCollection}
+            disabled={!batchGroupId || batches.length === 0 || !title}
+            sx={{ flex: 1 }}
+          >
+            Create Collection ({batches.length} cards)
           </Button>
         </Box>
 
+        {/* Processed Cards List */}
         {batches.length > 0 && (
-          <Typography variant="body2" color="text.secondary">
-            Total images:{" "}
-            {batches.reduce((sum, batch) => sum + batch.files.length, 0)}
-          </Typography>
+          <Box sx={{ mt: 4 }}>
+            <Typography variant="h6" gutterBottom>
+              Processed Cards
+            </Typography>
+            <List>
+              {batches.map((card, index) => (
+                <ListItem
+                  key={index}
+                  sx={{
+                    bgcolor: "background.paper",
+                    mb: 1,
+                    borderRadius: 1,
+                    border: "1px solid rgba(255, 255, 255, 0.12)",
+                  }}
+                  secondaryAction={
+                    <IconButton
+                      edge="end"
+                      onClick={() => {
+                        if (batchGroupId) {
+                          dispatch(
+                            deleteCardFromBatch({
+                              batchGroupId,
+                              cardIndex: index,
+                            })
+                          );
+                        }
+                      }}
+                      sx={{ color: "error.main" }}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  }
+                >
+                  <Box>
+                    <Typography variant="body1">{card.name}</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {card.type}
+                    </Typography>
+                  </Box>
+                </ListItem>
+              ))}
+            </List>
+          </Box>
         )}
       </Box>
-
-      {/* Batch List */}
-      {batches.length > 0 && (
-        <Box sx={{ mt: 4 }}>
-          <Typography variant="h6" gutterBottom>
-            Processed Batches
-          </Typography>
-          <List>
-            {batches.map((batch) => (
-              <ListItem
-                key={batch.id}
-                sx={{
-                  bgcolor: "background.paper",
-                  mb: 1,
-                  borderRadius: 1,
-                  border: "1px solid rgba(255, 255, 255, 0.12)",
-                }}
-                secondaryAction={
-                  <IconButton
-                    edge="end"
-                    onClick={() => dispatch(removeBatch(batch.id))}
-                    sx={{ color: "error.main" }}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                }
-              >
-                <Box sx={{ width: "100%" }}>
-                  <Typography variant="body1">
-                    Batch #{batch.id.slice(-4)}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {batch.files.length} images •{" "}
-                    {new Date(batch.timestamp).toLocaleString()}
-                  </Typography>
-                  <Box sx={{ mt: 1 }}>
-                    {batch.files.map((file, index) => (
-                      <Typography
-                        key={index}
-                        variant="caption"
-                        sx={{
-                          display: "inline-block",
-                          mr: 1,
-                          color: "text.secondary",
-                        }}
-                      >
-                        {file.name}
-                      </Typography>
-                    ))}
-                  </Box>
-                </Box>
-              </ListItem>
-            ))}
-          </List>
-        </Box>
-      )}
     </Paper>
   );
 };

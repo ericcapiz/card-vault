@@ -90,4 +90,24 @@ router.delete("/group/:batchGroupId", async (req, res) => {
   }
 });
 
+// Delete card from batch
+router.delete("/:batchGroupId/cards/:cardIndex", async (req, res) => {
+  try {
+    const { batchGroupId, cardIndex } = req.params;
+
+    const batch = await Batch.findOne({ batchGroupId });
+    if (!batch) {
+      return res.status(404).json({ message: "Batch not found" });
+    }
+
+    // Remove card at specified index
+    batch.cards.splice(parseInt(cardIndex), 1);
+    await batch.save();
+
+    res.json({ cards: batch.cards });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;

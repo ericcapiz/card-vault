@@ -1,30 +1,80 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { v4 as uuidv4 } from "uuid";
 
-interface Batch {
-  id: string;
-  timestamp: number;
-  files: File[];
+interface Card {
+  name: string;
+  type: string;
 }
 
 interface UploadState {
-  batches: Batch[];
+  batches: Card[];
   isProcessing: boolean;
   currentBatchError: string | null;
   processingError: string | null;
+  batchGroupId: string | null;
 }
 
-// Get initial batches from localStorage
 const initialState: UploadState = {
-  batches: [], // We can't store File objects in localStorage
+  batches: [],
   isProcessing: false,
   currentBatchError: null,
   processingError: null,
+  batchGroupId: null,
 };
 
 export const processImageBatch = createAsyncThunk(
   "upload/processImageBatch",
-  async (files: File[]) => {
-    return { files };
+  async (files: File[], { getState, rejectWithValue }) => {
+    try {
+      const formData = new FormData();
+      files.forEach((file) => {
+        formData.append("images", file);
+      });
+
+      const state = getState() as { upload: UploadState };
+      const batchGroupId = state.upload.batchGroupId || uuidv4();
+      formData.append("batchGroupId", batchGroupId);
+
+      const response = await fetch("https://card-vault.fly.dev/api/batches", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to process images");
+      }
+
+      const data = await response.json();
+      return { cards: data.cards, batchGroupId };
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const deleteCardFromBatch = createAsyncThunk(
+  "upload/deleteCardFromBatch",
+  async (
+    { batchGroupId, cardIndex }: { batchGroupId: string; cardIndex: number },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await fetch(
+        `https://card-vault.fly.dev/api/batches/${batchGroupId}/cards/${cardIndex}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to delete card");
+      }
+
+      const data = await response.json();
+      return data.cards;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
   }
 );
 
@@ -34,10 +84,11 @@ export const uploadSlice = createSlice({
   reducers: {
     clearBatches: (state) => {
       state.batches = [];
+      state.batchGroupId = null;
     },
     removeBatch: (state, action) => {
       state.batches = state.batches.filter(
-        (batch) => batch.id !== action.payload
+        (_, index) => index !== action.payload
       );
     },
   },
@@ -49,17 +100,18 @@ export const uploadSlice = createSlice({
       })
       .addCase(processImageBatch.fulfilled, (state, action) => {
         state.isProcessing = false;
-        const newBatch = {
-          id: Date.now().toString(),
-          timestamp: Date.now(),
-          files: action.payload.files,
-        };
-        state.batches.push(newBatch);
+        state.batches = action.payload.cards;
+        state.batchGroupId = action.payload.batchGroupId;
       })
       .addCase(processImageBatch.rejected, (state, action) => {
         state.isProcessing = false;
-        state.currentBatchError =
-          action.error.message || "Failed to process batch";
+        state.currentBatchError = action.payload as string;
+      })
+      .addCase(deleteCardFromBatch.fulfilled, (state, action) => {
+        state.batches = action.payload;
+      })
+      .addCase(deleteCardFromBatch.rejected, (state, action) => {
+        state.currentBatchError = action.payload as string;
       });
   },
 });
