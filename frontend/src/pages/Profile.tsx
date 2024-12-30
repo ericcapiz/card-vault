@@ -17,10 +17,12 @@ import {
   DialogContent,
   DialogActions,
   Button,
+  Tooltip,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import DownloadIcon from "@mui/icons-material/Download";
+import AddIcon from "@mui/icons-material/Add";
 import { UploadForm } from "@/components/UploadForm/UploadForm";
 import {
   fetchCollections,
@@ -113,6 +115,7 @@ const Profile = () => {
     title: string;
     description: string;
   } | null>(null);
+  const [addingCardsTo, setAddingCardsTo] = useState<string | null>(null);
 
   useEffect(() => {
     dispatch(fetchCollections());
@@ -150,6 +153,10 @@ const Profile = () => {
     );
   };
 
+  const handleAddCards = (collectionId: string) => {
+    setAddingCardsTo(collectionId);
+  };
+
   return (
     <Box
       sx={{
@@ -185,8 +192,30 @@ const Profile = () => {
                 borderColor: "divider",
               }}
             >
-              <Typography variant="h6">{collection.title}</Typography>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                <Tooltip
+                  title={collection.description || "No description"}
+                  placement="top"
+                  arrow
+                >
+                  <Typography variant="h6">
+                    {collection.title} ({collection.cards.length})
+                  </Typography>
+                </Tooltip>
+              </Box>
               <Box>
+                <IconButton
+                  size="small"
+                  onClick={() => handleAddCards(collection._id)}
+                  sx={{
+                    color: "#9BA5D9",
+                    "&:hover": {
+                      backgroundColor: "rgba(155, 165, 217, 0.08)",
+                    },
+                  }}
+                >
+                  <AddIcon />
+                </IconButton>
                 <IconButton
                   size="small"
                   onClick={() => handleDownload(collection._id)}
@@ -280,6 +309,28 @@ const Profile = () => {
       >
         <UploadForm />
       </Box>
+
+      {/* Add Cards Dialog */}
+      {addingCardsTo && (
+        <Dialog
+          open={Boolean(addingCardsTo)}
+          onClose={() => setAddingCardsTo(null)}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle>Add Cards to Collection</DialogTitle>
+          <DialogContent>
+            <UploadForm
+              isAddingToCollection={true}
+              collectionId={addingCardsTo}
+              onSuccess={() => {
+                setAddingCardsTo(null);
+                dispatch(fetchCollections());
+              }}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Edit Dialog */}
       {editingCollection && (

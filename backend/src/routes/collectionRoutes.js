@@ -209,4 +209,24 @@ router.get("/:id/download", async (req, res) => {
   }
 });
 
+// Add cards to collection
+router.post("/:id/cards", async (req, res) => {
+  try {
+    const { cards } = req.body;
+    const collection = await Collection.findById(req.params.id);
+
+    if (!collection) {
+      return res.status(404).json({ message: "Collection not found" });
+    }
+
+    // Add new cards to existing cards
+    collection.cards = [...collection.cards, ...cards];
+
+    const updatedCollection = await collection.save();
+    res.json(updatedCollection);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;

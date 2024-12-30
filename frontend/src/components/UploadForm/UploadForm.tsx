@@ -22,7 +22,17 @@ import type { RootState } from "@/store/store";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { fetchCollections } from "@/store/slices/collectionSlice";
 
-export const UploadForm = () => {
+interface UploadFormProps {
+  isAddingToCollection?: boolean;
+  collectionId?: string;
+  onSuccess?: () => void;
+}
+
+export const UploadForm = ({
+  isAddingToCollection = false,
+  collectionId,
+  onSuccess,
+}: UploadFormProps) => {
   const dispatch = useDispatch();
   const { isProcessing, batches, currentBatchError, batchGroupId } =
     useSelector((state: RootState) => state.upload);
@@ -57,48 +67,41 @@ export const UploadForm = () => {
     }
   };
 
-  const handleCreateCollection = async () => {
+  const handleCreateOrUpdate = async () => {
     if (!batchGroupId || batches.length === 0) return;
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(
-        "https://card-vault.fly.dev/api/collections",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            title,
-            description,
-            batchGroupId,
-          }),
-        }
-      );
+      const url = isAddingToCollection
+        ? `https://card-vault.fly.dev/api/collections/${collectionId}/cards`
+        : "https://card-vault.fly.dev/api/collections";
 
-      if (!response.ok) throw new Error("Failed to create collection");
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(
+          isAddingToCollection
+            ? { cards: batches[0].cards }
+            : { title, description, batchGroupId }
+        ),
+      });
 
-      const collection = await response.json();
-      setSuccessMessage(`Collection created successfully: `);
-      setNewCollectionId(collection._id);
+      if (!response.ok) throw new Error("Failed to process cards");
 
-      // Clear form after successful creation
+      // Clear form
       setTitle("");
       setDescription("");
       dispatch(clearBatches());
 
-      // Fetch updated collections
-      dispatch(fetchCollections());
-
-      // Clear success message after 5 seconds
-      setTimeout(() => {
-        setSuccessMessage(null);
-        setNewCollectionId(null);
-      }, 5000);
+      // Notify parent of success
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (error) {
-      console.error("Failed to create collection:", error);
+      console.error("Failed:", error);
     }
   };
 
@@ -123,47 +126,51 @@ export const UploadForm = () => {
         component="form"
         sx={{ display: "flex", flexDirection: "column", gap: 3 }}
       >
-        <TextField
-          required
-          fullWidth
-          label="Title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Enter collection title"
-          variant="outlined"
-          autoComplete="off"
-          sx={{
-            "& .MuiOutlinedInput-root": {
-              "&.Mui-focused fieldset": {
-                borderColor: "#9BA5D9",
-              },
-            },
-            "& label.Mui-focused": {
-              color: "#9BA5D9",
-            },
-          }}
-        />
+        {isAddingToCollection && (
+          <>
+            <TextField
+              required
+              fullWidth
+              label="Title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Enter collection title"
+              variant="outlined"
+              autoComplete="off"
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  "&.Mui-focused fieldset": {
+                    borderColor: "#9BA5D9",
+                  },
+                },
+                "& label.Mui-focused": {
+                  color: "#9BA5D9",
+                },
+              }}
+            />
 
-        <TextField
-          fullWidth
-          label="Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Enter collection description"
-          multiline
-          rows={3}
-          variant="outlined"
-          sx={{
-            "& .MuiOutlinedInput-root": {
-              "&.Mui-focused fieldset": {
-                borderColor: "#9BA5D9",
-              },
-            },
-            "& label.Mui-focused": {
-              color: "#9BA5D9",
-            },
-          }}
-        />
+            <TextField
+              fullWidth
+              label="Description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Enter collection description"
+              multiline
+              rows={3}
+              variant="outlined"
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  "&.Mui-focused fieldset": {
+                    borderColor: "#9BA5D9",
+                  },
+                },
+                "& label.Mui-focused": {
+                  color: "#9BA5D9",
+                },
+              }}
+            />
+          </>
+        )}
 
         <Box sx={{ mt: 2 }}>
           <input
@@ -201,11 +208,13 @@ export const UploadForm = () => {
 
           <Button
             variant="contained"
-            onClick={handleCreateCollection}
+            onClick={handleCreateOrUpdate}
             disabled={!batchGroupId || batches.length === 0 || !title}
             sx={{ flex: 1 }}
           >
-            Create Collection ({batches.length} cards)
+            {isAddingToCollection
+              ? "Add Cards"
+              : "Create Collection ({batches.length} cards)"}
           </Button>
         </Box>
 
