@@ -6,7 +6,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "build": "echo 'No build step needed for backend'"
+    "build": "npm install --production=false",
+    "deploy": "fly deploy"
   },
   "keywords": [],
   "author": "",
