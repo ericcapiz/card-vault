@@ -1,3 +1,8 @@
+# fly.toml app configuration file generated for card-vault on 2024-12-31T18:26:44Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
 app = 'card-vault'
 primary_region = 'ewr'
 
@@ -15,3 +20,4 @@ primary_region = 'ewr'
   memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
+  memory_mb = 1024
