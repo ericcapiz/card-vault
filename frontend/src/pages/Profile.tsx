@@ -329,7 +329,12 @@ const Profile = () => {
                       arrow
                     >
                       <Typography variant="h6">
-                        {collection.title} ({collection.cards.length})
+                        {collection.title} (
+                        {collection.cards.reduce(
+                          (total, card) => total + card.quantity,
+                          0
+                        )}
+                        )
                       </Typography>
                     </Tooltip>
                   </Box>
@@ -387,6 +392,7 @@ const Profile = () => {
                       <TableRow>
                         <TableCell>Card Name</TableCell>
                         <TableCell>Type</TableCell>
+                        <TableCell>Quantity</TableCell>
                         <TableCell align="right">Actions</TableCell>
                       </TableRow>
                     </TableHead>
@@ -395,6 +401,7 @@ const Profile = () => {
                         <TableRow key={index}>
                           <TableCell>{card.name}</TableCell>
                           <TableCell>{card.type}</TableCell>
+                          <TableCell>{card.quantity}</TableCell>
                           <TableCell align="right">
                             <IconButton
                               size="small"

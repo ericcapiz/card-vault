@@ -3,6 +3,7 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 interface Card {
   name: string;
   type: string;
+  quantity: number;
 }
 
 interface Collection {
