@@ -83,23 +83,22 @@ const findCardName = (lines) => {
 const processImage = async (file) => {
   try {
     console.log("Starting image processing...");
+    console.log("File received:", file.originalname);
 
     const imageContext = {
       imageContext: {
         textDetectionParams: {
           enableTextDetectionConfidenceScore: true,
         },
-        imageProperties: {
-          contrastAdjustment: 1.2,
-          brightnessAdjustment: -0.1,
-        },
       },
     };
 
+    console.log("Attempting OCR...");
     const [result] = await client.textDetection({
       image: { content: file.buffer },
       imageContext: imageContext,
     });
+    console.log("OCR completed");
 
     const detections = result.textAnnotations;
     if (!detections || detections.length === 0) {
@@ -127,8 +126,9 @@ const processImage = async (file) => {
     };
   } catch (error) {
     console.error("Error in processImage:", error);
+    console.error("Error details:", error.message);
     return {
-      filename: file.originalname,
+      filename: file?.originalname || "unknown",
       error: error.message,
       success: false,
     };
