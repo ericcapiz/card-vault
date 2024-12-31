@@ -2,9 +2,13 @@ const vision = require("@google-cloud/vision");
 const path = require("path");
 const axios = require("axios");
 
-// Creates a client
+// Creates a client using environment variables directly
 const client = new vision.ImageAnnotatorClient({
-  keyFilename: path.join(__dirname, "../config/google-credentials.json"),
+  credentials: {
+    private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+    client_email: process.env.GOOGLE_CLIENT_EMAIL,
+    project_id: process.env.GOOGLE_PROJECT_ID,
+  },
 });
 
 const cleanCardName = (cardName) => {
