@@ -1,13 +1,15 @@
 const vision = require("@google-cloud/vision");
+const sharp = require("sharp");
 const path = require("path");
 const axios = require("axios");
 
-// Creates a client using environment variables directly
+// Creates a client using environment variables
 const client = new vision.ImageAnnotatorClient({
   credentials: {
+    type: "service_account",
+    project_id: process.env.GOOGLE_PROJECT_ID,
     private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
     client_email: process.env.GOOGLE_CLIENT_EMAIL,
-    project_id: process.env.GOOGLE_PROJECT_ID,
   },
 });
 
@@ -86,8 +88,15 @@ const findCardName = (lines) => {
 
 const processImage = async (file) => {
   try {
-    console.log("Starting image processing...");
-    console.log("File received:", file.originalname);
+    // Optimize image before OCR
+    const optimizedBuffer = await sharp(file.buffer)
+      .resize(800, null, {
+        withoutEnlargement: true,
+        fit: "inside",
+      })
+      .grayscale()
+      .sharpen()
+      .toBuffer();
 
     const imageContext = {
       imageContext: {
@@ -96,13 +105,10 @@ const processImage = async (file) => {
         },
       },
     };
-
-    console.log("Attempting OCR...");
     const [result] = await client.textDetection({
-      image: { content: file.buffer },
+      image: { content: optimizedBuffer },
       imageContext: imageContext,
     });
-    console.log("OCR completed");
 
     const detections = result.textAnnotations;
     if (!detections || detections.length === 0) {

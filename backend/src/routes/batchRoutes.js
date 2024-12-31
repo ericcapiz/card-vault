@@ -10,19 +10,11 @@ const { v4: uuidv4 } = require("uuid");
 // Create batch (process images and store)
 router.post("/", auth, upload.array("images"), async (req, res) => {
   try {
-    console.log("Batch creation started");
-    console.log("Files received:", req.files?.length);
-
     // Check both req.body and req.body.batchGroupId
     const batchGroupId = req.body.batchGroupId || uuidv4();
-    console.log("Using batchGroupId:", batchGroupId);
 
     const files = req.files;
     const userId = req.userId; // From auth middleware
-
-    console.log("BatchGroupId from body:", batchGroupId);
-    console.log("Number of files:", files?.length);
-    console.log("User ID:", userId);
 
     if (!files || files.length === 0) {
       console.log("Error: No files provided");
@@ -35,9 +27,7 @@ router.post("/", auth, upload.array("images"), async (req, res) => {
     }
 
     // Process all images in parallel using shared OCR utility
-    console.log("Starting OCR processing...");
     const results = await Promise.all(files.map(processImage));
-    console.log("OCR Results:", results);
 
     // Extract just the name and type from verified cards
     const newCards = results
@@ -46,18 +36,15 @@ router.post("/", auth, upload.array("images"), async (req, res) => {
         name: result.verifiedCard.name,
         type: result.verifiedCard.type,
       }));
-    console.log("Processed cards:", newCards);
 
     // Find existing batch with this groupId
     const existingBatch = await Batch.findOne({ batchGroupId });
-    console.log("Existing batch found:", existingBatch ? "yes" : "no");
 
     let savedBatch;
     if (existingBatch) {
       // Append new cards to existing batch
       existingBatch.cards = [...existingBatch.cards, ...newCards];
       savedBatch = await existingBatch.save();
-      console.log("Updated existing batch:", savedBatch);
       res.status(200).json(savedBatch);
     } else {
       // Create new batch
