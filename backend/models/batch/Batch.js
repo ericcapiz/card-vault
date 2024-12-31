@@ -4,7 +4,6 @@ const batchSchema = new mongoose.Schema({
   batchGroupId: {
     type: String,
     required: true,
-    index: true,
   },
   cards: [
     {
@@ -26,11 +25,9 @@ const batchSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now,
+    expires: 18000, // 5 hours in seconds (5 * 60 * 60)
   },
 });
-
-// Index for batchGroupId and createdAt
-batchSchema.index({ batchGroupId: 1, createdAt: 1 });
 
 const Batch = mongoose.model("Batch", batchSchema);
 
