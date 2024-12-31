@@ -1,26 +1,26 @@
-FROM node:20.11.0-slim
+# syntax = docker/dockerfile:1
+
+ARG NODE_VERSION=18
+FROM node:${NODE_VERSION}
+
+LABEL fly_launch_runtime="Node.js"
 
 WORKDIR /app
 
-# Copy package files
+ENV NODE_ENV="production"
+
+# Install packages needed to build node modules
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y build-essential node-gyp pkg-config python-is-python3
+
+# Install node modules
 COPY package*.json ./
+RUN npm install --production
 
-# Install dependencies
-RUN npm ci --only=production
-
-# Copy source
+# Copy application code
 COPY . .
 
-# Environment variables
-ENV NODE_ENV=production
 ENV PORT=5000
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:5000/ || exit 1
-
-# Expose port
 EXPOSE 5000
 
-# Start the app
-CMD ["node", "src/server.js"]
+CMD [ "npm", "start" ]
