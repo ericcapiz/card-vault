@@ -5,16 +5,18 @@ const auth = require("../../middleware/auth");
 const multer = require("multer");
 const { processImage } = require("../utils/ocrUtils");
 const upload = multer({ storage: multer.memoryStorage() });
+const { v4: uuidv4 } = require("uuid");
 
 // Create batch (process images and store)
-router.post("/", auth, upload.array("images", 10), async (req, res) => {
+router.post("/", auth, upload.array("images"), async (req, res) => {
   try {
-    console.log("=== Batch Creation Started ===");
-    console.log("Request body:", req.body);
-    console.log("Files received:", req.files ? req.files.length : "no files");
-    console.log("Auth user ID:", req.userId);
+    console.log("Batch creation started");
+    console.log("Files received:", req.files?.length);
 
-    const { batchGroupId } = req.body;
+    // Check both req.body and req.body.batchGroupId
+    const batchGroupId = req.body.batchGroupId || uuidv4();
+    console.log("Using batchGroupId:", batchGroupId);
+
     const files = req.files;
     const userId = req.userId; // From auth middleware
 
