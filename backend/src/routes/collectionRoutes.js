@@ -72,10 +72,7 @@ router.get("/:id/download", auth, async (req, res) => {
     });
 
     // Set column widths
-    ws["!cols"] = [
-      { wch: 30 }, // Card Name column
-      { wch: 20 }, // Card Type column
-    ];
+    ws["!cols"] = [{ wch: 30 }, { wch: 20 }];
 
     // Use collection title as sheet name (sanitize it for Excel)
     const sheetName = collection.title
@@ -192,19 +189,24 @@ router.post("/:id/cards", auth, upload.array("images"), async (req, res) => {
       return res.status(400).json({ message: "No files uploaded" });
     }
 
-    // Process each uploaded file
-    const processedCards = req.files.map((file) => {
-      // Here you would process the image file and extract card info
-      // For now, let's just create a basic card entry
-      return {
-        name: file.originalname.replace(/\.[^/.]+$/, ""), // Remove file extension
-        type: "Unknown", // You'll need to implement proper type detection
-      };
+    // Create a temporary batch for OCR processing
+    const batchGroupId = Date.now().toString();
+    const batch = new Batch({
+      userId: req.userId,
+      batchGroupId,
+      files: req.files,
     });
 
-    // Add the new cards to the collection
-    collection.cards.push(...processedCards);
+    // Process the images using the existing OCR logic
+    await batch.processImages();
+
+    // Add the processed cards to the collection
+    collection.cards.push(...batch.cards);
     const updatedCollection = await collection.save();
+
+    // Clean up the temporary batch
+    await Batch.deleteOne({ _id: batch._id });
+
     res.json(updatedCollection);
   } catch (error) {
     console.error("Error adding cards:", error);
