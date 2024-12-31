@@ -19,7 +19,18 @@ router.post("/", auth, async (req, res) => {
     if (batchGroupId) {
       const batch = await Batch.findOne({ batchGroupId, userId });
       if (batch) {
-        cards = batch.cards;
+        // Group cards by name and count quantities
+        const cardCounts = batch.cards.reduce((acc, card) => {
+          const key = `${card.name}-${card.type}`;
+          if (!acc[key]) {
+            acc[key] = { ...card, quantity: 1 };
+          } else {
+            acc[key].quantity += 1;
+          }
+          return acc;
+        }, {});
+
+        cards = Object.values(cardCounts);
       }
     }
 
@@ -63,17 +74,18 @@ router.get("/:id/download", auth, async (req, res) => {
     const formattedCards = collection.cards.map((card) => ({
       "Card Name": card.name,
       "Card Type": card.type,
+      Quantity: card.quantity,
     }));
 
     // Create workbook and worksheet
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(formattedCards, {
-      header: ["Card Name", "Card Type"],
+      header: ["Card Name", "Card Type", "Quantity"],
       skipHeader: false,
     });
 
     // Set column widths
-    ws["!cols"] = [{ wch: 30 }, { wch: 20 }];
+    ws["!cols"] = [{ wch: 30 }, { wch: 20 }, { wch: 10 }];
 
     // Use collection title as sheet name (sanitize it for Excel)
     const sheetName = collection.title
@@ -166,7 +178,14 @@ router.delete("/:id/cards/:cardIndex", auth, async (req, res) => {
       return res.status(400).json({ message: "Invalid card index" });
     }
 
-    collection.cards.splice(cardIndex, 1);
+    // If quantity > 1, decrease quantity by 1
+    if (collection.cards[cardIndex].quantity > 1) {
+      collection.cards[cardIndex].quantity -= 1;
+    } else {
+      // If quantity is 1, remove the card entirely
+      collection.cards.splice(cardIndex, 1);
+    }
+
     const updatedCollection = await collection.save();
     res.json(updatedCollection);
   } catch (error) {
@@ -193,18 +212,28 @@ router.post("/:id/cards", auth, upload.array("images"), async (req, res) => {
     // Process all images in parallel using the same OCR utility
     const results = await Promise.all(req.files.map(processImage));
 
-    // Extract just the name and type from verified cards
-    const processedCards = results
+    // Extract verified cards
+    const newCards = results
       .filter((result) => result.success && result.verifiedCard)
       .map((result) => ({
         name: result.verifiedCard.name,
         type: result.verifiedCard.type,
       }));
 
-    // Add the processed cards to the collection
-    collection.cards.push(...processedCards);
-    const updatedCollection = await collection.save();
+    // Update quantities for existing cards and add new ones
+    newCards.forEach((newCard) => {
+      const existingCard = collection.cards.find(
+        (card) => card.name === newCard.name && card.type === newCard.type
+      );
 
+      if (existingCard) {
+        existingCard.quantity += 1;
+      } else {
+        collection.cards.push({ ...newCard, quantity: 1 });
+      }
+    });
+
+    const updatedCollection = await collection.save();
     res.json(updatedCollection);
   } catch (error) {
     console.error("Error adding cards:", error);
