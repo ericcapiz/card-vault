@@ -149,9 +149,8 @@ export const addCardsToCollection = createAsyncThunk(
       const formData = new FormData();
       files.forEach((file) => formData.append("images", file));
 
-      // First process images through OCR
       const ocrResponse = await fetch(
-        "https://card-vault.fly.dev/api/upload/process",
+        "https://card-vault.fly.dev/api/batches/process",
         {
           method: "POST",
           headers: {
@@ -167,7 +166,6 @@ export const addCardsToCollection = createAsyncThunk(
 
       const processedData = await ocrResponse.json();
 
-      // Then add processed cards to collection
       const addResponse = await fetch(
         `https://card-vault.fly.dev/api/collections/${collectionId}/cards`,
         {
