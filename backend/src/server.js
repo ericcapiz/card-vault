@@ -15,7 +15,12 @@ const PORT = process.env.PORT || 5000;
 // CORS configuration
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: [
+      "http://localhost:3000",
+      "https://card-vault-app.vercel.app",
+      "https://card-vault-git-main-eric-capizs-projects.vercel.app",
+      "https://card-vault-9ofkx14u5-eric-capizs-projects.vercel.app",
+    ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
