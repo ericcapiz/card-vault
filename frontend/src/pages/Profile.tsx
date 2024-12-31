@@ -173,15 +173,12 @@ const EditDialog = ({
         </Button>
         <Button
           onClick={() => onSave(newTitle, newDescription)}
-          disabled={!isSaveEnabled}
           sx={{
-            color: isSaveEnabled ? "#9BA5D9" : "rgba(255, 255, 255, 0.3)",
-            "&:hover": isSaveEnabled
-              ? {
-                  color: "#B8C0E9",
-                  backgroundColor: "rgba(155, 165, 217, 0.08)",
-                }
-              : {},
+            color: "#9BA5D9",
+            "&:hover": {
+              color: "#B8C0E9",
+              backgroundColor: "rgba(155, 165, 217, 0.08)",
+            },
           }}
         >
           Save Collection Details
