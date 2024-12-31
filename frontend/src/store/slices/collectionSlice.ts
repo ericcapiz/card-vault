@@ -149,8 +149,8 @@ export const addCardsToCollection = createAsyncThunk(
       const formData = new FormData();
       files.forEach((file) => formData.append("images", file));
 
-      const ocrResponse = await fetch(
-        "https://card-vault.fly.dev/api/batches/process",
+      const response = await fetch(
+        `https://card-vault.fly.dev/api/collections/${collectionId}/cards`,
         {
           method: "POST",
           headers: {
@@ -160,29 +160,11 @@ export const addCardsToCollection = createAsyncThunk(
         }
       );
 
-      if (!ocrResponse.ok) {
-        throw new Error("Failed to process images");
-      }
-
-      const processedData = await ocrResponse.json();
-
-      const addResponse = await fetch(
-        `https://card-vault.fly.dev/api/collections/${collectionId}/cards`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ cards: processedData.cards }),
-        }
-      );
-
-      if (!addResponse.ok) {
-        const error = await addResponse.text();
+      if (!response.ok) {
+        const error = await response.text();
         throw new Error(error);
       }
-      return await addResponse.json();
+      return await response.json();
     } catch (error) {
       return rejectWithValue(error.message);
     }

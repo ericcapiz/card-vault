@@ -6,6 +6,7 @@ const auth = require("../../middleware/auth");
 const XLSX = require("xlsx");
 const multer = require("multer");
 const upload = multer({ storage: multer.memoryStorage() });
+const { processImage } = require("../utils/ocrUtils");
 
 // Create collection - auth required
 router.post("/", auth, async (req, res) => {
@@ -189,23 +190,20 @@ router.post("/:id/cards", auth, upload.array("images"), async (req, res) => {
       return res.status(400).json({ message: "No files uploaded" });
     }
 
-    // Create a temporary batch for OCR processing
-    const batchGroupId = Date.now().toString();
-    const batch = new Batch({
-      userId: req.userId,
-      batchGroupId,
-      files: req.files,
-    });
+    // Process all images in parallel using the same OCR utility
+    const results = await Promise.all(req.files.map(processImage));
 
-    // Process the images using the existing OCR logic
-    await batch.processImages();
+    // Extract just the name and type from verified cards
+    const processedCards = results
+      .filter((result) => result.success && result.verifiedCard)
+      .map((result) => ({
+        name: result.verifiedCard.name,
+        type: result.verifiedCard.type,
+      }));
 
     // Add the processed cards to the collection
-    collection.cards.push(...batch.cards);
+    collection.cards.push(...processedCards);
     const updatedCollection = await collection.save();
-
-    // Clean up the temporary batch
-    await Batch.deleteOne({ _id: batch._id });
 
     res.json(updatedCollection);
   } catch (error) {
