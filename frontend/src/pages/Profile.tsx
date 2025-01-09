@@ -422,7 +422,7 @@ const Profile = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {collection.cards
+                      {[...collection.cards]
                         .sort((a, b) => {
                           if (sortField === "name") {
                             return sortDirection === "asc"
