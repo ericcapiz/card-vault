@@ -147,7 +147,7 @@ export const Navbar = () => {
                     alignItems: "center",
                   }}
                 >
-                  <Typography>Hello, {user?.username.toUpperCase()}</Typography>
+                  <Typography>{user?.username.toUpperCase()}</Typography>
                 </NavLink>
                 <Button
                   onClick={handleLogout}

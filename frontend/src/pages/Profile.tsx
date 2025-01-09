@@ -202,6 +202,8 @@ const Profile = () => {
     description: string;
   } | null>(null);
   const [successMessage, setSuccessMessage] = useState("");
+  const [sortField, setSortField] = useState<"name" | "quantity">("name");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   useEffect(() => {
     dispatch(fetchCollections());
@@ -274,6 +276,15 @@ const Profile = () => {
       document.body.removeChild(a);
     } catch (error) {
       console.error("Download failed:", error);
+    }
+  };
+
+  const handleSort = (field: "name" | "quantity") => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
     }
   };
 
@@ -390,36 +401,62 @@ const Profile = () => {
                   <Table size="small">
                     <TableHead>
                       <TableRow>
-                        <TableCell>Card Name</TableCell>
+                        <TableCell
+                          onClick={() => handleSort("name")}
+                          style={{ cursor: "pointer" }}
+                        >
+                          Card Name{" "}
+                          {sortField === "name" &&
+                            (sortDirection === "asc" ? "↑" : "↓")}
+                        </TableCell>
                         <TableCell>Type</TableCell>
-                        <TableCell>Quantity</TableCell>
+                        <TableCell
+                          onClick={() => handleSort("quantity")}
+                          style={{ cursor: "pointer" }}
+                        >
+                          Quantity{" "}
+                          {sortField === "quantity" &&
+                            (sortDirection === "asc" ? "↑" : "↓")}
+                        </TableCell>
                         <TableCell align="right">Actions</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {collection.cards.map((card, index) => (
-                        <TableRow key={index}>
-                          <TableCell>{card.name}</TableCell>
-                          <TableCell>{card.type}</TableCell>
-                          <TableCell>{card.quantity}</TableCell>
-                          <TableCell align="right">
-                            <IconButton
-                              size="small"
-                              onClick={() =>
-                                handleDeleteCard(collection._id, index)
-                              }
-                              sx={{
-                                color: "error.main",
-                                "&:hover": {
-                                  backgroundColor: "rgba(255, 99, 71, 0.08)",
-                                },
-                              }}
-                            >
-                              <DeleteIcon />
-                            </IconButton>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {collection.cards
+                        .sort((a, b) => {
+                          if (sortField === "name") {
+                            return sortDirection === "asc"
+                              ? a.name.localeCompare(b.name)
+                              : b.name.localeCompare(a.name);
+                          } else {
+                            return sortDirection === "asc"
+                              ? a.quantity - b.quantity
+                              : b.quantity - a.quantity;
+                          }
+                        })
+                        .map((card, index) => (
+                          <TableRow key={index}>
+                            <TableCell>{card.name}</TableCell>
+                            <TableCell>{card.type}</TableCell>
+                            <TableCell>{card.quantity}</TableCell>
+                            <TableCell align="right">
+                              <IconButton
+                                size="small"
+                                onClick={() =>
+                                  handleDeleteCard(collection._id, index)
+                                }
+                                sx={{
+                                  color: "error.main",
+                                  "&:hover": {
+                                    backgroundColor: "rgba(255, 99, 71, 0.08)",
+                                  },
+                                }}
+                              >
+                                <DeleteIcon />
+                              </IconButton>
+                            </TableCell>
+                          </TableRow>
+                        ))}
                     </TableBody>
                   </Table>
                 </TableContainer>
