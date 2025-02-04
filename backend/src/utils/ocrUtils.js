@@ -2,6 +2,7 @@ const vision = require("@google-cloud/vision");
 const sharp = require("sharp");
 const path = require("path");
 const axios = require("axios");
+require("dotenv").config();
 
 // Creates a client using environment variables
 const client = new vision.ImageAnnotatorClient({

@@ -9,7 +9,10 @@ import {
   Box,
   Typography,
   CircularProgress,
+  IconButton,
+  InputAdornment,
 } from "@mui/material";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 import {
   login,
   register,
@@ -18,11 +21,58 @@ import {
 } from "@/store/slices/authSlice";
 import { RootState } from "@/store/store";
 import type { AppDispatch } from "@/store/store";
+import { styled } from "@mui/material/styles";
 
 interface AuthModalProps {
   open: boolean;
   onClose: () => void;
 }
+
+const StyledAuthButton = styled(Button)(({ theme }) => ({
+  textDecoration: "none",
+  color: "inherit",
+  padding: "8px 12px",
+  borderRadius: "4px",
+  position: "relative",
+  display: "inline-block",
+  transition: "all 0.3s",
+  "&::before": {
+    content: '""',
+    position: "absolute",
+    inset: 0,
+    background: "rgba(255, 255, 255, 0.03)",
+    borderRadius: "4px",
+    transform: "scaleX(0.7) scaleY(0.6)",
+    opacity: 0,
+    transition: "all 0.3s",
+  },
+  "&::after": {
+    content: '""',
+    position: "absolute",
+    bottom: "4px",
+    left: "12px",
+    right: "12px",
+    height: "2px",
+    background: "linear-gradient(90deg, #FFD700, #9B4D86, #FFD700)",
+    transform: "scaleX(0)",
+    opacity: 0,
+    transition: "all 0.3s",
+  },
+  "&:hover": {
+    transform: "scale(1.05) translateY(-1px)",
+    letterSpacing: "1px",
+    color: "#9B4D86",
+    textShadow: "0 0 8px rgba(155, 77, 134, 0.4)",
+    "&::before": {
+      transform: "scale(1)",
+      opacity: 1,
+    },
+    "&::after": {
+      transform: "scaleX(1)",
+      opacity: 1,
+    },
+  },
+}));
 
 export const AuthModal = ({ open, onClose }: AuthModalProps) => {
   const dispatch = useDispatch<AppDispatch>();
@@ -35,6 +85,8 @@ export const AuthModal = ({ open, onClose }: AuthModalProps) => {
     email: "",
     password: "",
   });
+
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleClose = () => {
     setFormData({
@@ -93,6 +145,10 @@ export const AuthModal = ({ open, onClose }: AuthModalProps) => {
       ...formData,
       [e.target.name]: e.target.value,
     });
+  };
+
+  const handleClickShowPassword = () => {
+    setShowPassword((prev) => !prev);
   };
 
   const textFieldSx = {
@@ -176,11 +232,25 @@ export const AuthModal = ({ open, onClose }: AuthModalProps) => {
             fullWidth
             label="Password"
             name="password"
-            type="password"
+            type={showPassword ? "text" : "password"}
             value={formData.password}
             onChange={handleChange}
             autoComplete="new-password"
             sx={textFieldSx}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={handleClickShowPassword}
+                    edge="end"
+                    aria-label="toggle password visibility"
+                    sx={{ color: "#FFD700" }}
+                  >
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
           />
 
           {error && (
@@ -189,7 +259,7 @@ export const AuthModal = ({ open, onClose }: AuthModalProps) => {
             </Typography>
           )}
 
-          <Button
+          <StyledAuthButton
             type="submit"
             variant="contained"
             fullWidth
@@ -203,7 +273,7 @@ export const AuthModal = ({ open, onClose }: AuthModalProps) => {
             ) : (
               "Register"
             )}
-          </Button>
+          </StyledAuthButton>
 
           <Button
             variant="text"
