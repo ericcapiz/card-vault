@@ -7,6 +7,7 @@ import { AuthModal } from "@/components/AuthModal/AuthModal";
 import { logout } from "@/store/slices/authSlice";
 import { RootState } from "@/store/store";
 import type { AppDispatch } from "@/store/store";
+import { AccountCircle } from "@mui/icons-material";
 
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
   background: theme.palette.primary.main,
@@ -147,9 +148,10 @@ export const Navbar = () => {
                     alignItems: "center",
                   }}
                 >
+                  <AccountCircle sx={{ mr: 1 }} />
                   <Typography>{user?.username.toUpperCase()}</Typography>
                 </NavLink>
-                <Button
+                <NavLink
                   onClick={handleLogout}
                   sx={{
                     color: "white",
@@ -164,7 +166,7 @@ export const Navbar = () => {
                   }}
                 >
                   LOGOUT
-                </Button>
+                </NavLink>
               </>
             ) : (
               <StyledButton
