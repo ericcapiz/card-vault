@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { Box } from "@mui/material";
+import { Box, Container } from "@mui/material";
 import Hero from "@/components/Home/Hero";
 import Features from "@/components/Home/Features";
 import HowItWorks from "@/components/Home/HowItWorks";
@@ -16,15 +16,29 @@ const Home = () => {
       sx={{
         display: "flex",
         flexDirection: "column",
+        minHeight: "100vh",
+        justifyContent: "center",
         alignItems: "center",
-        gap: 24,
+        gap: { xs: 4, md: 6 },
+        pb: { xs: 4, md: 6 },
       }}
     >
       <Hero scrollToFeatures={scrollToFeatures} />
-      <Box ref={featuresRef}>
-        <Features />
-      </Box>
-      <HowItWorks />
+      <Container
+        maxWidth="xl"
+        sx={{
+          width: "100%",
+          px: { xs: 2, sm: 3, md: 4 },
+          mx: "auto",
+        }}
+      >
+        <Box ref={featuresRef}>
+          <Features />
+        </Box>
+        <Box sx={{ mt: { xs: 4, md: 6 } }}>
+          <HowItWorks />
+        </Box>
+      </Container>
     </Box>
   );
 };

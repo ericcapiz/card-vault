@@ -29,7 +29,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // Handle unauthorized access
       localStorage.removeItem("token");
-      // You might want to dispatch a logout action here
+      window.location.href = "/";
     }
     return Promise.reject(error);
   }
